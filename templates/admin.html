@@ -2,41 +2,59 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Gestão | Faz com Fé</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Vendas - Faz com Fé</title>
     <style>
-        body { background: #050505; color: #fff; font-family: sans-serif; padding: 40px; }
-        table { width: 100%; border-collapse: collapse; background: #111; margin-top: 20px; }
-        th, td { border: 1px solid #222; padding: 15px; text-align: left; }
-        th { text-transform: uppercase; font-size: 0.7rem; color: #444; letter-spacing: 2px; }
-        .status-pago { color: #25d366; font-weight: bold; }
-        .btn-confirm { background: #fff; color: #000; padding: 7px 12px; text-decoration: none; font-size: 0.7rem; font-weight: bold; }
+        body { background-color: #0b0b0b; color: #ffffff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: auto; background: #1a1a1a; padding: 20px; border-radius: 8px; border: 1px solid #f1c40f; }
+        h1 { color: #f1c40f; text-align: center; border-bottom: 2px solid #f1c40f; padding-bottom: 10px; }
+        .resumo { display: flex; justify-content: space-around; margin-bottom: 20px; background: #222; padding: 15px; border-radius: 5px; }
+        .stats { text-align: center; }
+        .stats span { display: block; font-size: 2rem; font-weight: bold; color: #f1c40f; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
+        th { background-color: #f1c40f; color: #000; text-transform: uppercase; font-size: 0.8rem; }
+        tr:hover { background-color: #252525; }
+        .btn-zap { background: #25d366; color: white; text-decoration: none; padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; }
     </style>
 </head>
 <body>
-    <h1 style="letter-spacing: 5px;">GESTÃO DE VENDAS</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>Nome</th>
-                <th>WhatsApp</th>
-                <th>Status</th>
-                <th>Ação</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for cliente in clientes %}
-            <tr>
-                <td>{{ cliente.nome }}</td>
-                <td>{{ cliente.telefone }}</td>
-                <td class="{{ 'status-pago' if cliente.pago == 'PAGO' else '' }}">{{ cliente.pago }}</td>
-                <td>
-                    {% if cliente.pago != 'PAGO' %}
-                    <a href="/confirmar/{{ cliente.id }}" class="btn-confirm">VALIDAR</a>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="container">
+        <h1>GESTÃO DE VENDAS - CARA 2026</h1>
+        
+        <div class="resumo">
+            <div class="stats">
+                <p>Clientes Ativos</p>
+                <span>{{ clientes|length }}</span>
+            </div>
+            <div class="stats">
+                <p>Meta da Feijoada</p>
+                <span>150</span>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Data/Hora</th>
+                    <th>Nome do Cliente</th>
+                    <th>WhatsApp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in clientes %}
+                <tr>
+                    <td>{{ c.data_inscricao.strftime('%d/%m %H:%M') }}</td>
+                    <td>{{ c.nome }}</td>
+                    <td>
+                        <a href="https://wa.me/{{ c.telefone }}" target="_blank" class="btn-zap">
+                            Chamar no Zap
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </body>
 </html>
