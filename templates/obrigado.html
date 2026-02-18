@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagamento | CARA 2026</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background: #000; color: #fff; text-align: center; padding: 40px 20px; position: relative; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        body::after {
+            content: ""; background: url("/static/plano-fundo.jpg") no-repeat center center;
+            background-size: cover; opacity: 0.08; top: 0; left: 0; bottom: 0; right: 0;
+            position: absolute; z-index: -1;
+        }
+        .card { background: rgba(15,15,15,0.95); border: 1px solid #333; padding: 40px; max-width: 420px; width: 100%; backdrop-filter: blur(10px); }
+        .logo { width: 60px; margin-bottom: 20px; }
+        h3 { letter-spacing: 2px; margin-bottom: 10px; font-weight: 400; }
+        .pix-box { background: #fff; padding: 10px; display: inline-block; margin: 20px 0; border-radius: 4px; }
+        
+        /* Estilo do Código Copia e Cola */
+        .chave-container { background: #1a1a1a; padding: 15px; border: 1px dashed #444; margin: 15px 0; border-radius: 4px; }
+        .chave-texto { font-size: 0.75rem; color: #aaa; word-break: break-all; display: block; margin-bottom: 10px; }
+        .btn-copiar { background: #333; color: #fff; border: none; padding: 8px 15px; font-size: 0.7rem; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
+        .btn-copiar:hover { background: #555; }
+
+        .btn-wpp { display: block; background: #25d366; color: white; padding: 18px; text-decoration: none; font-weight: bold; margin-top: 25px; border-radius: 2px; transition: 0.3s; }
+        .btn-wpp:hover { background: #1ebd58; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <img src="/static/logo-evento.png" class="logo">
+        <h3>QUASE LÁ, {{ nome }}!</h3>
+        <p style="color: #666; font-size: 0.9rem;">Escaneie o QR Code ou copie o código abaixo:</p>
+        
+        <div class="pix-box">
+            <img src="/static/qr-code-pix.png" width="200" alt="QR Code Pix">
+        </div>
+
+        <div class="chave-container">
+            <span class="chave-texto" id="chavePix">COLOQUE_AQUI_O_SEU_CODIGO_COPIA_E_COLA_GERADO</span>
+            <button class="btn-copiar" onclick="copyChave()">Copiar Código Pix</button>
+        </div>
+
+        <a href="https://wa.me/5521980737063?text=Olá! Acabei de fazer o Pix para o evento CARA 2026. Segue o comprovante de {{ nome }}." class="btn-wpp">
+            JÁ FIZ O PIX, ENVIAR COMPROVANTE
+        </a>
+    </div>
+
+    <script>
+        function copyChave() {
+            var text = document.getElementById("chavePix").innerText;
+            navigator.clipboard.writeText(text).then(function() {
+                alert("Código Pix copiado!");
+            });
+        }
+    </script>
+</body>
+</html>

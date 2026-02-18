@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscrição | CARA 2026</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { 
+            background: #000; color: #fff; height: 100vh; 
+            display: flex; align-items: center; justify-content: center;
+            position: relative; overflow: hidden;
+        }
+        body::after {
+            content: ""; background: url("/static/plano-fundo.jpg") no-repeat center center;
+            background-size: cover; opacity: 0.12; top: 0; left: 0; bottom: 0; right: 0;
+            position: absolute; z-index: -1;
+        }
+        .card {
+            background: rgba(10, 10, 10, 0.85); border: 1px solid #333;
+            padding: 40px; width: 90%; max-width: 400px;
+            backdrop-filter: blur(10px); text-align: center;
+        }
+        .logo-pequena { width: 80px; margin-bottom: 20px; }
+        h2 { letter-spacing: 4px; font-weight: 300; margin-bottom: 30px; font-size: 0.9rem; color: #888; text-transform: uppercase; }
+        input {
+            width: 100%; background: transparent; border: none; border-bottom: 1px solid #444; 
+            color: #fff; padding: 12px; margin-bottom: 25px; outline: none; text-align: center;
+        }
+        input:focus { border-bottom-color: #fff; }
+        button {
+            width: 100%; padding: 15px; background: #fff; color: #000;
+            border: none; font-weight: bold; text-transform: uppercase;
+            letter-spacing: 2px; cursor: pointer; transition: 0.3s;
+        }
+        button:hover { background: #555; color: #fff; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <img src="/static/logo-evento.png" class="logo-pequena">
+        <h2>Faz com Fé <br> Apresenta</h2>
+        <form action="/cadastrar" method="POST">
+            <input type="text" name="nome" placeholder="NOME COMPLETO" required>
+            <input type="text" name="telefone" placeholder="WHATSAPP" required>
+            <button type="submit">Solicitar Convite</button>
+        </form>
+    </div>
+</body>
+</html>

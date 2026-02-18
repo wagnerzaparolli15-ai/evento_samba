@@ -1,0 +1,15 @@
+# Ambiente Virtual (Não precisa no GitHub)
+venv/
+env/
+
+# Banco de Dados Local (Segurança dos dados dos clientes)
+*.db
+*.sqlite3
+
+# Arquivos do Sistema Operacional
+Thumbs.db
+.DS_Store
+
+# Pastas de Cache do Python
+__pycache__/
+*.py[cod]
