@@ -5,20 +5,22 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# Configuração para o Banco de Dados Profissional do Render
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///projeto.db')
+# AJUSTE DE SEGURANÇA PARA O RENDER
+uri = os.environ.get('DATABASE_URL', 'sqlite:///projeto.db')
+if uri.startswith("postgres://"):
+    uri = uri.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# Modelo de Dados para os Clientes (Vendas de Ingressos)
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
     telefone = db.Column(db.String(20), nullable=False)
     data_inscricao = db.Column(db.DateTime, default=datetime.utcnow)
 
-# Cria as tabelas no PostgreSQL automaticamente
 with app.app_context():
     db.create_all()
 
@@ -30,7 +32,6 @@ def index():
 def comprar():
     nome = request.form.get('nome')
     telefone = request.form.get('telefone')
-    
     if nome and telefone:
         novo_cliente = Cliente(nome=nome, telefone=telefone)
         db.session.add(novo_cliente)
@@ -44,7 +45,6 @@ def obrigado():
 
 @app.route('/admin-cara-2026')
 def admin():
-    # Lista de clientes ordenada pela compra mais recente
     lista_clientes = Cliente.query.order_by(Cliente.id.desc()).all()
     return render_template('admin.html', clientes=lista_clientes)
 
