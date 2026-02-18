@@ -2,55 +2,35 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Vendas - Faz com Fé</title>
+    <title>Painel de Vendas - CARA 2026</title>
     <style>
-        body { background-color: #0b0b0b; color: #ffffff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: auto; background: #1a1a1a; padding: 20px; border-radius: 8px; border: 1px solid #f1c40f; }
-        h1 { color: #f1c40f; text-align: center; border-bottom: 2px solid #f1c40f; padding-bottom: 10px; }
-        .resumo { display: flex; justify-content: space-around; margin-bottom: 20px; background: #222; padding: 15px; border-radius: 5px; }
-        .stats { text-align: center; }
-        .stats span { display: block; font-size: 2rem; font-weight: bold; color: #f1c40f; }
+        body { background: #000; color: #fff; font-family: sans-serif; padding: 20px; }
+        .container { max-width: 800px; margin: auto; border: 1px solid #f1c40f; padding: 20px; border-radius: 10px; }
+        h1 { color: #f1c40f; text-align: center; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
-        th { background-color: #f1c40f; color: #000; text-transform: uppercase; font-size: 0.8rem; }
-        tr:hover { background-color: #252525; }
-        .btn-zap { background: #25d366; color: white; text-decoration: none; padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; }
+        th, td { border-bottom: 1px solid #333; padding: 15px; text-align: left; }
+        th { color: #f1c40f; text-transform: uppercase; font-size: 0.8rem; }
+        .btn-zap { background: #25d366; color: #fff; text-decoration: none; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>GESTÃO DE VENDAS - CARA 2026</h1>
-        
-        <div class="resumo">
-            <div class="stats">
-                <p>Clientes Ativos</p>
-                <span>{{ clientes|length }}</span>
-            </div>
-            <div class="stats">
-                <p>Meta da Feijoada</p>
-                <span>150</span>
-            </div>
-        </div>
-
+        <h1>GESTOR DE VENDAS - FAZ COM FÉ</h1>
+        <p>Total de Clientes: <strong>{{ clientes|length }}</strong></p>
         <table>
             <thead>
                 <tr>
-                    <th>Data/Hora</th>
                     <th>Nome do Cliente</th>
                     <th>WhatsApp</th>
+                    <th>Ação</th>
                 </tr>
             </thead>
             <tbody>
                 {% for c in clientes %}
                 <tr>
-                    <td>{{ c.data_inscricao.strftime('%d/%m %H:%M') }}</td>
                     <td>{{ c.nome }}</td>
-                    <td>
-                        <a href="https://wa.me/{{ c.telefone }}" target="_blank" class="btn-zap">
-                            Chamar no Zap
-                        </a>
-                    </td>
+                    <td>{{ c.telefone }}</td>
+                    <td><a href="https://wa.me/{{ c.telefone }}" target="_blank" class="btn-zap">Chamar no Zap</a></td>
                 </tr>
                 {% endfor %}
             </tbody>

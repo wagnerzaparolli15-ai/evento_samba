@@ -5,21 +5,20 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# Configuração do Banco de Dados Profissional (PostgreSQL no Render)
-# Se não encontrar a variável, ele usa um banco local para testes
+# Configuração para o Banco de Dados Profissional do Render
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///projeto.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# Modelo de Dados para os Clientes do Evento CARA 2026
+# Modelo de Dados para os Clientes (Vendas de Ingressos)
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
     telefone = db.Column(db.String(20), nullable=False)
     data_inscricao = db.Column(db.DateTime, default=datetime.utcnow)
 
-# Criar as tabelas no banco de dados
+# Cria as tabelas no PostgreSQL automaticamente
 with app.app_context():
     db.create_all()
 
@@ -43,10 +42,9 @@ def comprar():
 def obrigado():
     return render_template('obrigado.html')
 
-# PAINEL DE GESTÃO - ACESSO EXCLUSIVO DO PRODUTOR
 @app.route('/admin-cara-2026')
 def admin():
-    # Busca todos os clientes que compraram ingressos, do mais recente para o mais antigo
+    # Lista de clientes ordenada pela compra mais recente
     lista_clientes = Cliente.query.order_by(Cliente.id.desc()).all()
     return render_template('admin.html', clientes=lista_clientes)
 
