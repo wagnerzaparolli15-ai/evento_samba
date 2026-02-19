@@ -1,19 +1,40 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<title>Cadastro Evento</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faz com Fé | Ingressos</title>
+    <style>
+        body { 
+            background: #000 url("{{ url_for('static', filename='plano-fundo.jpg') }}") no-repeat center center fixed; 
+            background-size: cover; 
+            font-family: sans-serif; 
+            display: flex; align-items: center; justify-content: center; 
+            height: 100vh; margin: 0; 
+        }
+        .card { 
+            background: rgba(0, 0, 0, 0.9); 
+            padding: 30px; border-radius: 15px; 
+            border: 2px solid #f1c40f; 
+            text-align: center; width: 320px; color: #fff; 
+        }
+        .logo { width: 120px; margin-bottom: 10px; }
+        .lote { background: #e74c3c; padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+        .preco { color: #2ecc71; font-size: 2.2rem; font-weight: bold; margin: 15px 0; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 5px; border: 1px solid #333; background: #000; color: #fff; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; background: #f1c40f; border: none; font-weight: bold; cursor: pointer; border-radius: 5px; text-transform: uppercase; }
+    </style>
 </head>
 <body>
-<h1>Cadastro Evento</h1>
-<form action="/cadastrar" method="POST">
-Nome:<br>
-<input type="text" name="nome" required><br><br>
-Telefone:<br>
-<input type="text" name="telefone" required><br><br>
-<button type="submit">Cadastrar</button>
-</form>
-<br>
-<a href="/admin">Ver Admin</a>
+    <div class="card">
+        <img src="{{ url_for('static', filename='logo-evento.png') }}" class="logo">
+        <br><span class="lote">{{ lote }}º LOTE ATIVO</span>
+        <div class="preco">R$ {{ "%.2f"|format(preco) }}</div>
+        <form action="/comprar" method="POST">
+            <input type="text" name="nome" placeholder="NOME COMPLETO" required>
+            <input type="text" name="telefone" placeholder="WHATSAPP COM DDD" required>
+            <button type="submit">RESERVAR INGRESSO</button>
+        </form>
+    </div>
 </body>
 </html>
