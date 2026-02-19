@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seu Ingresso | Faz com Fé</title>
+    <title>Seu Ingresso</title>
     <style>
         body { background: #000; color: #fff; text-align: center; font-family: sans-serif; padding: 20px; }
         .ticket { background: #111; border: 2px solid #f1c40f; padding: 25px; max-width: 350px; margin: auto; border-radius: 15px; }
@@ -13,27 +13,20 @@
 </head>
 <body>
     <div class="ticket">
-        <h2 style="color:#f1c40f">INGRESSO GARANTIDO!</h2>
-        <p><strong>NOME:</strong> {{ nome }}</p>
-        <p><strong>ID DO PEDIDO:</strong> #{{ id_cliente }}</p>
-        
-        <div class="qr-box">
-            <div id="qrcode"></div>
-        </div>
-        
-        <p style="font-size:0.8rem; color:#888;">Apresente este QR Code na portaria para validar sua entrada.</p>
+        <h2 style="color:#f1c40f">PAGAMENTO PENDENTE</h2>
+        <p>Olá, {{ nome }}!</p>
+        <p>Seu ingresso individual foi reservado:</p>
+        <div class="qr-box"><div id="qrcode"></div></div>
+        <p style="font-size:0.8rem; color:#888;">ID DO INGRESSO: #{{ id_cliente }}</p>
+        <hr style="border:0; border-top:1px solid #333; margin:20px 0;">
         <p>Valor: R$ {{ "%.2f"|format(valor) }}</p>
-        <a href="https://wa.me/5521980737063?text=Oi! Fiz a reserva de {{ nome }} (ID: {{ id_cliente }}). Segue o comprovante." class="btn-zap">ENVIAR COMPROVANTE PIX</a>
+        <a href="https://wa.me/5521980737063?text=Oi! Fiz o Pix do ingresso #{{ id_cliente }}." class="btn-zap">ENVIAR COMPROVANTE AGORA</a>
     </div>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
-        // O link do QR Code é individual baseado no ID do banco de dados
-        var linkCheckin = "https://evento-samba.onrender.com/checkin/{{ id_cliente }}";
         new QRCode(document.getElementById("qrcode"), {
-            text: linkCheckin,
-            width: 180,
-            height: 180
+            text: "https://evento-samba.onrender.com/checkin/{{ id_cliente }}",
+            width: 150, height: 150
         });
     </script>
 </body>
