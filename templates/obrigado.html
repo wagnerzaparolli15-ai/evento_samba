@@ -3,59 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seu Ingresso | Faz com Fé</title>
+    <title>Seu Ingresso</title>
     <style>
         body { background: #111; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
-        .ticket { 
-            background: #fff; color: #000; max-width: 350px; margin: 20px auto; 
-            padding: 25px; border-radius: 15px; position: relative;
-        }
-        .header { border-bottom: 2px dashed #ccc; padding-bottom: 15px; margin-bottom: 15px; }
-        .nome { font-size: 1.4rem; font-weight: bold; text-transform: uppercase; }
-        .item-detalhe { background: #000; color: #f1c40f; padding: 10px; font-weight: bold; border-radius: 5px; margin: 15px 0; }
-        #qrcode { display: flex; justify-content: center; margin: 20px 0; }
-        .aviso { font-size: 0.8rem; color: #666; font-style: italic; }
-        .btn-zap { 
-            display: inline-block; background: #25d366; color: #fff; padding: 15px 25px; 
-            text-decoration: none; border-radius: 10px; font-weight: bold; margin-top: 20px; 
-        }
+        .ticket { background: #fff; color: #000; max-width: 320px; margin: 20px auto; padding: 20px; border-radius: 15px; }
+        #qrcode { display: flex; justify-content: center; margin: 15px 0; }
+        .btn-zap { background: #25d366; color: #fff; padding: 15px; text-decoration: none; display: block; border-radius: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h2 style="color:#f1c40f">SUA RESERVA FOI FEITA!</h2>
-    <p>Tire um print desta tela e apresente na portaria.</p>
-
+    <h2 style="color:#f1c40f">RESERVA CONFIRMADA!</h2>
     <div class="ticket">
-        <div class="header">
-            <div class="nome">{{ nome }}</div>
-            <div style="font-size: 0.8rem; color: #888;">ID: #00{{ id_cliente }}</div>
-        </div>
-
-        <div class="item-detalhe">
-            ENTRADA LIBERADA + FEIJOADA 🍲
-        </div>
-
+        <h3 style="margin:0;">{{ nome }}</h3>
+        <p style="background:#000; color:#f1c40f; padding:5px;">INGRESSO + FEIJOADA 🍲</p>
         <div id="qrcode"></div>
-
-        <div class="aviso">
-            Este QR Code é único e será invalidado após a primeira leitura na entrada.
-        </div>
+        <p style="font-size:0.8rem; color:#666;">Apresente este QR Code na entrada. Uso único.</p>
     </div>
-
-    <a href="https://wa.me/5521980737063?text=Comprovante do ingresso #00{{ id_cliente }} ({{ nome }})" class="btn-zap">
-        ENVIAR COMPROVANTE POR WHATSAPP
-    </a>
+    <a href="https://wa.me/5521980737063?text=Comprovante de {{ nome }}" class="btn-zap">ENVIAR COMPROVANTE VIA WHATSAPP</a>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
         window.onload = function() {
             new QRCode(document.getElementById("qrcode"), {
                 text: "{{ checkin_url }}",
-                width: 200,
-                height: 200,
-                colorDark : "#000000",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
+                width: 180, height: 180
             });
         };
     </script>
