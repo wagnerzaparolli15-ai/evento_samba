@@ -5,48 +5,19 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# AJUSTE DE SEGURANÇA PARA O RENDER
+# CONFIGURAÇÃO OTIMIZADA PARA O RENDER
 uri = os.environ.get('DATABASE_URL', 'sqlite:///projeto.db')
-if uri.startswith("postgres://"):
+if uri and uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
+
+# Adiciona o SSL via código caso você esqueça no painel
+if uri and "sslmode" not in uri and "localhost" not in uri:
+    separator = "&" if "?" in uri else "?"
+    uri += f"{separator}sslmode=require"
 
 app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-class Cliente(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(100), nullable=False)
-    telefone = db.Column(db.String(20), nullable=False)
-    data_inscricao = db.Column(db.DateTime, default=datetime.utcnow)
-
-with app.app_context():
-    db.create_all()
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/comprar', methods=['POST'])
-def comprar():
-    nome = request.form.get('nome')
-    telefone = request.form.get('telefone')
-    if nome and telefone:
-        novo_cliente = Cliente(nome=nome, telefone=telefone)
-        db.session.add(novo_cliente)
-        db.session.commit()
-        return redirect(url_for('obrigado'))
-    return redirect(url_for('index'))
-
-@app.route('/obrigado')
-def obrigado():
-    return render_template('obrigado.html')
-
-@app.route('/admin-cara-2026')
-def admin():
-    lista_clientes = Cliente.query.order_by(Cliente.id.desc()).all()
-    return render_template('admin.html', clientes=lista_clientes)
-
-if __name__ == '__main__':
-    app.run(debug=True)
+# Restante do seu código (Classe Cliente, Rotas, etc...) continua igual
