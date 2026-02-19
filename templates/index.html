@@ -7,7 +7,7 @@
     <title>Feijoada, Samba & Bafafá</title>
 
     <meta property="og:title" content="Feijoada, Samba & Bafafá">
-    <meta property="og:description" content="Garanta seu ingresso para o evento do CARA 2026 pela Faz com Fé Produções.">
+    <meta property="og:description" content="Garanta seu ingresso para o evento pela Faz com Fé Produções.">
     <meta property="og:image" content="{{ url_for('static', filename='logo-evento.png', _external=True) }}">
     <meta property="og:url" content="https://evento-samba.onrender.com">
     <meta property="og:type" content="website">
@@ -35,7 +35,6 @@
         }
         .logo { width: 180px; margin-bottom: 10px; }
         h1 { color: #f1c40f; margin: 10px 0; font-size: 1.8rem; text-transform: uppercase; }
-        p { font-size: 1.1rem; margin-bottom: 20px; color: #ddd; }
         input { display: block; width: 100%; margin: 15px 0; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #222; color: #fff; box-sizing: border-box; }
         button { background: #f1c40f; color: #000; border: none; padding: 18px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1.1rem; text-transform: uppercase; transition: 0.3s; }
         button:hover { background: #fff; transform: scale(1.02); }
@@ -45,7 +44,6 @@
     <div class="card">
         <img src="{{ url_for('static', filename='logo-evento.png') }}" alt="Logo CARA" class="logo">
         <h1>Feijoada, Samba & Bafafá</h1>
-        <p>Relançamento da carreira do CARA em 2026</p>
         
         <form action="/comprar" method="POST">
             <input type="text" name="nome" placeholder="Seu Nome Completo" required>
