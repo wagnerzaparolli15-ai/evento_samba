@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 
-# --- CONFIGURAÇÃO DE CONEXÃO ---
+# CONFIGURAÇÃO DE CONEXÃO
 uri = os.environ.get('DATABASE_URL')
 if uri and uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
@@ -13,10 +13,9 @@ if uri and "sslmode" not in uri:
 
 app.config['SQLALCHEMY_DATABASE_URI'] = uri or 'sqlite:///fazcomfe.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 db = SQLAlchemy(app)
 
-# --- MODELO DE DADOS ---
+# MODELO DE DADOS
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
@@ -25,7 +24,6 @@ class Cliente(db.Model):
     lote = db.Column(db.Integer)
     compareceu = db.Column(db.Boolean, default=False)
 
-# --- ROTAS ---
 @app.route('/')
 def index():
     try:
@@ -62,18 +60,11 @@ def checkin(id):
         msg = f"LIBERADO: {c.nome}"
     else:
         msg = f"ALERTA: {c.nome} JÁ ENTROU!"
-    return f"<h1>{msg}</h1><br><a href='/admin-cara-2026'>Voltar</a>"
+    return f"<div style='text-align:center;padding:50px;font-family:sans-serif;'><h1>{msg}</h1><a href='/'>Voltar</a></div>"
 
-@app.route('/admin-cara-2026')
-def admin():
-    clientes = Cliente.query.order_by(Cliente.id.desc()).all()
-    faturamento = sum([c.valor_pago for c in clientes])
-    return render_template('admin.html', clientes=clientes, total=len(clientes), faturamento=faturamento)
-
-
+# INICIALIZAÇÃO COM RESET (DROP_ALL)
 if __name__ == '__main__':
     with app.app_context():
-        # ESTA LINHA É O SEGREDO: Ela vai apagar a tabela sem a coluna e criar a nova
-        #db.drop_all() 
-        db.create_all()
+        db.drop_all() # APAGA TUDO PARA CRIAR DO ZERO SEM ERRO DE COLUNA
+        db.create_all() # CRIA AS TABELAS CERTAS
     app.run(debug=False)

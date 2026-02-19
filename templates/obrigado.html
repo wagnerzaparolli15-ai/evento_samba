@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seu Ingresso</title>
+    <title>Seu Ingresso | Faz com Fé</title>
     <style>
         body { background: #000; color: #fff; text-align: center; font-family: sans-serif; padding: 20px; }
         .ticket { background: #111; border: 2px solid #f1c40f; padding: 25px; max-width: 350px; margin: auto; border-radius: 15px; }
@@ -13,12 +13,13 @@
 </head>
 <body>
     <div class="ticket">
-        <h2 style="color:#f1c40f">INGRESSO GARANTIDO</h2>
-        <p><strong>{{ nome }}</strong></p>
+        <h2 style="color:#f1c40f">PAGAMENTO PENDENTE</h2>
+        <p>Olá, {{ nome }}!</p>
         <div class="qr-box"><div id="qrcode"></div></div>
-        <p style="font-size:0.8rem; color:#888;">ID: #00{{ id_cliente }}</p>
-        <p>Valor: R$ {{ "%.2f"|format(valor) }}</p>
-        <a href="https://wa.me/5521980737063?text=Comprovante do ingresso #00{{ id_cliente }}" class="btn-zap">ENVIAR PIX AGORA</a>
+        <p style="font-size:0.8rem; color:#888;">ID DO INGRESSO: #00{{ id_cliente }}</p>
+        <p>Valor: <strong>R$ {{ "%.2f"|format(valor) }}</strong></p>
+        <a href="https://wa.me/5521980737063?text=Oi! Sou {{ nome }}. Segue o comprovante do ingresso #00{{ id_cliente }}." class="btn-zap">ENVIAR COMPROVANTE AGORA</a>
+        <p style="margin-top:15px; font-size:0.7rem; color:#666;">Apresente este QR Code na portaria.</p>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.1/qrcode.min.js"></script>
     <script>
