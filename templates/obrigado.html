@@ -7,65 +7,53 @@
     <style>
         body { background: #000; color: #fff; text-align: center; font-family: sans-serif; padding: 20px; }
         .ticket { 
-            background: #111; 
-            border: 2px solid #f1c40f; 
-            padding: 30px; 
-            max-width: 380px; 
-            margin: auto; 
-            border-radius: 20px; 
-            position: relative;
+            background: #111; border: 2px solid #f1c40f; padding: 30px; 
+            max-width: 380px; margin: auto; border-radius: 20px; 
         }
         .qr-box { 
-            background: #fff; 
-            padding: 15px; 
-            display: inline-block; 
-            margin: 20px 0; 
-            border-radius: 12px; 
-            border: 4px solid #f1c40f;
+            background: #fff; padding: 15px; display: inline-block; 
+            margin: 20px 0; border-radius: 12px; border: 4px solid #f1c40f;
+            min-height: 150px; min-width: 150px;
         }
         .btn-zap { 
-            display: block; 
-            background: #25d366; 
-            color: #fff; 
-            padding: 18px; 
-            text-decoration: none; 
-            font-weight: bold; 
-            border-radius: 8px; 
-            margin-top: 20px; 
-            text-transform: uppercase;
+            display: block; background: #25d366; color: #fff; padding: 18px; 
+            text-decoration: none; font-weight: bold; border-radius: 8px; 
+            margin-top: 20px; text-transform: uppercase;
         }
-        .info-txt { color: #f1c40f; font-weight: bold; font-size: 1.1rem; }
     </style>
 </head>
 <body>
     <div class="ticket">
-        <img src="{{ url_for('static', filename='logo-evento.png') }}" width="100">
-        <h2 style="color:#f1c40f">INGRESSO CONFIRMADO!</h2>
-        <p class="info-txt">{{ nome }}</p>
+        <h2 style="color:#f1c40f">RESERVA CONFIRMADA!</h2>
+        <p><strong>{{ nome }}</strong></p>
         
         <div class="qr-box">
             <div id="qrcode"></div>
         </div>
         
-        <p style="color:#aaa; font-size: 0.9rem;">ID INDIVIDUAL: #00{{ id_cliente }}</p>
-        <p style="font-size: 1.2rem;">Valor: <strong>R$ {{ "%.2f"|format(valor) }}</strong></p>
+        <p style="color:#aaa; font-size: 0.9rem;">ID DO INGRESSO: #00{{ id_cliente }}</p>
+        <p>Valor: <strong>R$ {{ "%.2f"|format(valor) }}</strong></p>
         
-        <a href="https://wa.me/5521980737063?text=Oi! Sou {{ nome }}. Aqui está o comprovante do ingresso #00{{ id_cliente }}." class="btn-zap">ENVIAR COMPROVANTE AGORA</a>
+        <a href="https://wa.me/5521980737063?text=Oi! Sou {{ nome }}. Segue o comprovante do ingresso #00{{ id_cliente }}." class="btn-zap">ENVIAR COMPROVANTE AGORA</a>
         
-        <p style="margin-top: 20px; font-size: 0.7rem; color: #666;">Apresente este QR Code na portaria do evento.</p>
+        <p style="margin-top: 20px; font-size: 0.7rem; color: #666;">Tire um print desta tela e apresente na portaria.</p>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.1/qrcode.min.js"></script>
     <script>
-        // Link individual do check-in
-        var urlCheckin = "https://evento-samba.onrender.com/checkin/{{ id_cliente }}";
-        new QRCode(document.getElementById("qrcode"), {
-            text: urlCheckin,
-            width: 180,
-            height: 180,
-            colorDark : "#000000",
-            colorLight : "#ffffff"
-        });
+        window.onload = function() {
+            var el = document.getElementById("qrcode");
+            if (el) {
+                new QRCode(el, {
+                    text: "https://evento-samba.onrender.com/checkin/{{ id_cliente }}",
+                    width: 150,
+                    height: 150,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+            }
+        };
     </script>
 </body>
 </html>
