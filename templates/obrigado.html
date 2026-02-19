@@ -23,8 +23,9 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.1/qrcode.min.js"></script>
     <script>
+        const qrText = "{{ checkin_url if checkin_url is defined else ('/checkin/' ~ id_cliente) }}";
         new QRCode(document.getElementById("qrcode"), {
-            text: "https://evento-samba.onrender.com/checkin/{{ id_cliente }}",
+            text: qrText,
             width: 150, height: 150
         });
     </script>
