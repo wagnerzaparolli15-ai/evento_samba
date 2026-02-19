@@ -70,10 +70,10 @@ def admin():
     faturamento = sum([c.valor_pago for c in clientes])
     return render_template('admin.html', clientes=clientes, total=len(clientes), faturamento=faturamento)
 
-# --- INICIALIZAÇÃO COM RESET DE SEGURANÇA ---
+
 if __name__ == '__main__':
     with app.app_context():
-        # Descomente a linha abaixo (remova o #) caso o Erro 500 continue
-        # db.drop_all() 
+        # ESTA LINHA É O SEGREDO: Ela vai apagar a tabela sem a coluna e criar a nova
+        #db.drop_all() 
         db.create_all()
     app.run(debug=False)
