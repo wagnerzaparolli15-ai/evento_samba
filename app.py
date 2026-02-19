@@ -4,18 +4,15 @@ from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 
-# CONFIGURAÇÃO DE CONEXÃO
+# Configuração da Database
 uri = os.environ.get('DATABASE_URL')
 if uri and uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
-if uri and "sslmode" not in uri:
-    uri += "&sslmode=require" if "?" in uri else "?sslmode=require"
-
 app.config['SQLALCHEMY_DATABASE_URI'] = uri or 'sqlite:///fazcomfe.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# MODELO DE DADOS
+# Modelo Completo
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
@@ -57,14 +54,12 @@ def checkin(id):
     if not c.compareceu:
         c.compareceu = True
         db.session.commit()
-        msg = f"LIBERADO: {c.nome}"
-    else:
-        msg = f"ALERTA: {c.nome} JÁ ENTROU!"
-    return f"<div style='text-align:center;padding:50px;font-family:sans-serif;'><h1>{msg}</h1><a href='/'>Voltar</a></div>"
+        return f"<h1>LIBERADO: {c.nome}</h1>"
+    return f"<h1>ALERTA: {c.nome} JÁ ENTROU!</h1>"
 
-# INICIALIZAÇÃO COM RESET (DROP_ALL)
 if __name__ == '__main__':
     with app.app_context():
-        db.drop_all() # APAGA TUDO PARA CRIAR DO ZERO SEM ERRO DE COLUNA
-        db.create_all() # CRIA AS TABELAS CERTAS
+        # COMANDO DE CHOQUE: Apaga a tabela velha e cria a nova com valor_pago
+        db.drop_all() # 
+        db.create_all() #
     app.run(debug=False)
