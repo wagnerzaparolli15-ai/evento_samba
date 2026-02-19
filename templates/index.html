@@ -3,25 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Faz com Fé | Samba</title>
+    <title>Faz com Fé | Samba & Feijoada</title>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .card { background: #111; padding: 30px; border-radius: 15px; border: 2px solid #f1c40f; text-align: center; width: 320px; }
-        .lote { background: #e74c3c; padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
-        .preco { color: #2ecc71; font-size: 2.2rem; font-weight: bold; margin: 15px 0; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 5px; border: 1px solid #333; background: #000; color: #fff; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; background: #f1c40f; border: none; font-weight: bold; cursor: pointer; border-radius: 5px; text-transform: uppercase; }
+        body { 
+            background-image: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url("{{ url_for('static', filename='fundo.jpg') }}");
+            background-size: cover; background-position: center; background-attachment: fixed;
+            color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0;
+        }
+        .card { 
+            background: rgba(20, 20, 20, 0.95); padding: 40px 20px; border-radius: 20px; 
+            border: 2px solid #f1c40f; text-align: center; width: 90%; max-width: 350px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+        }
+        .logo-img { width: 140px; margin-bottom: 20px; }
+        .lote { background: #e74c3c; padding: 5px 15px; border-radius: 50px; font-size: 0.8rem; font-weight: bold; letter-spacing: 1px; }
+        .info-evento { color: #f1c40f; font-weight: bold; margin: 15px 0; font-size: 1.1rem; }
+        .preco { color: #2ecc71; font-size: 2.5rem; font-weight: bold; margin: 10px 0; }
+        .sub-item { font-size: 0.9rem; color: #ccc; margin-bottom: 20px; }
+        input { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: 1px solid #444; background: #111; color: #fff; box-sizing: border-box; font-size: 1rem; }
+        button { width: 100%; padding: 18px; background: #f1c40f; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; text-transform: uppercase; font-size: 1rem; transition: 0.3s; color: #000; }
+        button:hover { background: #d4ac0d; transform: translateY(-2px); }
+        .error { color: #ff7675; font-size: 0.9rem; margin-bottom: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1 style="color:#f1c40f">FEIJOADA & SAMBA</h1>
-        <span class="lote">{{ lote }}º LOTE ATIVO</span>
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Faz com Fé" class="logo-img">
+        <div class="lote">{{ lote }}º LOTE ATIVO</div>
+        <div class="info-evento">INGRESSO + FEIJOADA COMPLETA</div>
         <div class="preco">R$ {{ "%.2f"|format(preco) }}</div>
+        <div class="sub-item">Acesso individual ao evento</div>
+
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+
         <form action="/comprar" method="POST">
             <input type="text" name="nome" placeholder="NOME COMPLETO" required>
-            <input type="text" name="telefone" placeholder="WHATSAPP COM DDD" required>
-            <button type="submit">GARANTIR INGRESSO</button>
+            <input type="tel" name="telefone" placeholder="WHATSAPP (DDD + NÚMERO)" required>
+            <button type="submit">RESERVAR MEU LUGAR</button>
         </form>
     </div>
 </body>
