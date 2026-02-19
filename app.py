@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 
-# CONFIGURAÇÃO DE CONEXÃO
+# CONFIGURAÇÃO DE CONEXÃO BLINDADA
 uri = os.environ.get('DATABASE_URL')
 if uri and uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
@@ -38,14 +38,17 @@ def index():
 def comprar():
     nome = request.form.get('nome', '').upper()
     tel = request.form.get('telefone', '')
-    total = Cliente.query.count()
-    valor, num_lote = (45.0, 1) if total < 75 else (55.0, 2)
-
-    if nome and tel:
-        novo = Cliente(nome=nome, telefone=tel, valor_pago=valor, lote=num_lote)
-        db.session.add(novo)
-        db.session.commit()
-        return render_template('obrigado.html', nome=nome, id_cliente=novo.id, valor=valor)
+    try:
+        total = Cliente.query.count()
+        valor, num_lote = (45.0, 1) if total < 75 else (55.0, 2)
+        if nome and tel:
+            novo = Cliente(nome=nome, telefone=tel, valor_pago=valor, lote=num_lote)
+            db.session.add(novo)
+            db.session.commit()
+            return render_template('obrigado.html', nome=nome, id_cliente=novo.id, valor=valor)
+    except Exception as e:
+        print(f"Erro no Banco: {e}")
+        return "Erro ao processar reserva. Tente novamente."
     return redirect(url_for('index'))
 
 @app.route('/checkin/<int:id>')
@@ -57,7 +60,7 @@ def checkin(id):
         msg = f"LIBERADO: {c.nome}"
     else:
         msg = f"ALERTA: {c.nome} JÁ ENTROU!"
-    return f"<h1>{msg}</h1><br><a href='/admin-cara-2026'>Voltar</a>"
+    return f"<div style='text-align:center;padding:50px;font-family:sans-serif;'><h1>{msg}</h1><a href='/admin-cara-2026'>Voltar</a></div>"
 
 @app.route('/admin-cara-2026')
 def admin():

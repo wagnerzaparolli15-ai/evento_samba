@@ -1,0 +1,10 @@
+🚀 O "Checkmate" Final no seu ThinkPad T440:
+Atualize o arquivo requirements.txt com o texto acima.
+
+Mande para o ar:
+
+git add .
+
+git commit -m "Dependencias de banco finalizadas"
+
+git push origin master
