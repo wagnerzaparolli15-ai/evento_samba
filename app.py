@@ -16,7 +16,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# MODELO COM ID ÚNICO PARA O QR CODE
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
@@ -40,15 +39,12 @@ def comprar():
     nome = request.form.get('nome', '').upper()
     tel = request.form.get('telefone', '')
     total = Cliente.query.count()
-    
-    if total >= 150: return "<h1>ESGOTADO!</h1>"
     valor, num_lote = (45.0, 1) if total < 75 else (55.0, 2)
 
     if nome and tel:
         novo = Cliente(nome=nome, telefone=tel, valor_pago=valor, lote=num_lote)
         db.session.add(novo)
         db.session.commit()
-        # Envia o ID individual para a página de ingresso
         return render_template('obrigado.html', nome=nome, id_cliente=novo.id, valor=valor)
     return redirect(url_for('index'))
 
@@ -58,10 +54,10 @@ def checkin(id):
     if not c.compareceu:
         c.compareceu = True
         db.session.commit()
-        msg, cor = f"LIBERADO: {c.nome}", "green"
+        msg = f"LIBERADO: {c.nome}"
     else:
-        msg, cor = f"ALERTA: {c.nome} JÁ ENTROU!", "orange"
-    return f"<div style='text-align:center;padding:50px;font-family:sans-serif;'><h1 style='color:{cor}'>{msg}</h1><a href='/admin-cara-2026'>Painel</a></div>"
+        msg = f"ALERTA: {c.nome} JÁ ENTROU!"
+    return f"<h1>{msg}</h1><br><a href='/admin-cara-2026'>Voltar</a>"
 
 @app.route('/admin-cara-2026')
 def admin():
@@ -72,4 +68,4 @@ def admin():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    app.run(debug=False)

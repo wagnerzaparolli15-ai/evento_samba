@@ -3,57 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seu Ingresso | Faz com Fé</title>
+    <title>Seu Ingresso</title>
     <style>
         body { background: #000; color: #fff; text-align: center; font-family: sans-serif; padding: 20px; }
-        .ticket { 
-            background: #111; border: 2px solid #f1c40f; padding: 30px; 
-            max-width: 380px; margin: auto; border-radius: 20px; 
-        }
-        .qr-box { 
-            background: #fff; padding: 15px; display: inline-block; 
-            margin: 20px 0; border-radius: 12px; border: 4px solid #f1c40f;
-            min-height: 150px; min-width: 150px;
-        }
-        .btn-zap { 
-            display: block; background: #25d366; color: #fff; padding: 18px; 
-            text-decoration: none; font-weight: bold; border-radius: 8px; 
-            margin-top: 20px; text-transform: uppercase;
-        }
+        .ticket { background: #111; border: 2px solid #f1c40f; padding: 25px; max-width: 350px; margin: auto; border-radius: 15px; }
+        .qr-box { background: #fff; padding: 10px; display: inline-block; margin: 20px 0; border-radius: 8px; }
+        .btn-zap { display: block; background: #25d366; color: #fff; padding: 15px; text-decoration: none; font-weight: bold; border-radius: 5px; margin-top: 15px; }
     </style>
 </head>
 <body>
     <div class="ticket">
-        <h2 style="color:#f1c40f">RESERVA CONFIRMADA!</h2>
-        <p><strong>{{ nome }}</strong></p>
-        
-        <div class="qr-box">
-            <div id="qrcode"></div>
-        </div>
-        
-        <p style="color:#aaa; font-size: 0.9rem;">ID DO INGRESSO: #00{{ id_cliente }}</p>
-        <p>Valor: <strong>R$ {{ "%.2f"|format(valor) }}</strong></p>
-        
-        <a href="https://wa.me/5521980737063?text=Oi! Sou {{ nome }}. Segue o comprovante do ingresso #00{{ id_cliente }}." class="btn-zap">ENVIAR COMPROVANTE AGORA</a>
-        
-        <p style="margin-top: 20px; font-size: 0.7rem; color: #666;">Tire um print desta tela e apresente na portaria.</p>
+        <h2 style="color:#f1c40f">SUCESSO!</h2>
+        <p>{{ nome }}</p>
+        <div class="qr-box"><div id="qrcode"></div></div>
+        <p style="font-size:0.8rem; color:#888;">ID: #00{{ id_cliente }}</p>
+        <p>Valor: R$ {{ "%.2f"|format(valor) }}</p>
+        <a href="https://wa.me/5521980737063?text=Comprovante do ingresso #00{{ id_cliente }}" class="btn-zap">ENVIAR PIX AGORA</a>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.1/qrcode.min.js"></script>
     <script>
-        window.onload = function() {
-            var el = document.getElementById("qrcode");
-            if (el) {
-                new QRCode(el, {
-                    text: "https://evento-samba.onrender.com/checkin/{{ id_cliente }}",
-                    width: 150,
-                    height: 150,
-                    colorDark : "#000000",
-                    colorLight : "#ffffff",
-                    correctLevel : QRCode.CorrectLevel.H
-                });
-            }
-        };
+        new QRCode(document.getElementById("qrcode"), {
+            text: "https://evento-samba.onrender.com/checkin/{{ id_cliente }}",
+            width: 150, height: 150
+        });
     </script>
 </body>
 </html>
