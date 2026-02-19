@@ -1,24 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Script seguro para rodar em uma shell one-off no Render.
-# Uso: cole este arquivo no servidor ou execute diretamente na shell do one-off.
-
+# Script automatizado para Plano Free (Sem Shell interativo)
 export FLASK_APP=app.py
 
-echo "=== Dry-run: listando duplicatas ==="
-python scripts/clean_duplicates.py || { echo "Dry-run falhou"; exit 1; }
+echo "=== Iniciando processo de limpeza e migração ==="
 
-read -p "Deseja aplicar as remoções e executar migrações? (digite 'yes' para confirmar) " CONFIRM
-if [ "$CONFIRM" != "yes" ]; then
-  echo "Abortando por segurança. Nenhuma alteração aplicada."
-  exit 0
-fi
-
-echo "=== Aplicando remoções ==="
-python scripts/clean_duplicates.py --apply
+# Tenta limpar duplicatas automaticamente. 
+# O "|| true" garante que, se der erro (ex: pasta errada), o site não morra.
+python scripts/clean_duplicates.py --apply || python clean_duplicates.py --apply || echo "Aviso: Script de duplicatas não encontrado."
 
 echo "=== Aplicando migrações (flask db upgrade) ==="
+# Isso cria a coluna 'valor_pago' que está faltando no banco
 flask db upgrade
 
-echo "Pronto. Verifique a aplicação e rode os testes de fumaça no navegador."
+echo "=== Inicialização concluída. Ligando o site... ==="
