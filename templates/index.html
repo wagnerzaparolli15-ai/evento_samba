@@ -5,26 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Feijoada, Samba & Bafafá</title>
     <style>
-        body { background: url("{{ url_for('static', filename='plano-fundo.jpg') }}") no-repeat center center fixed; background-size: cover; font-family: sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .card { background: rgba(0, 0, 0, 0.9); padding: 30px; border-radius: 15px; border: 2px solid #f1c40f; text-align: center; width: 90%; max-width: 350px; }
-        .logo { width: 150px; }
-        h1 { color: #f1c40f; font-size: 1.4rem; margin: 15px 0; text-transform: uppercase; }
-        .lote-info { color: #fff; background: #c0392b; display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.8rem; margin-bottom: 10px; }
-        .preco { color: #25d366; font-size: 1.8rem; font-weight: bold; margin-bottom: 20px; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #333; background: #222; color: #fff; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; background: #f1c40f; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        body { background: #000 url("/static/plano-fundo.jpg") no-repeat center center fixed; background-size: cover; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .card { background: rgba(0,0,0,0.9); padding: 30px; border-radius: 15px; border: 2px solid #f1c40f; text-align: center; width: 320px; box-shadow: 0 0 20px rgba(241,196,15,0.2); }
+        .lote-tag { background: #e74c3c; color: #fff; padding: 5px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; }
+        h1 { color: #f1c40f; font-size: 1.4rem; margin: 15px 0; }
+        .preco { color: #2ecc71; font-size: 2rem; font-weight: bold; margin: 10px 0; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 5px; border: 1px solid #333; background: #111; color: #fff; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; background: #f1c40f; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; border-radius: 5px; margin-top: 10px; }
     </style>
 </head>
 <body>
     <div class="card">
-        <img src="{{ url_for('static', filename='logo-evento.png') }}" class="logo">
-        <h1>Feijoada, Samba & Bafafá</h1>
-        <div class="lote-info">{{ lote }}º LOTE ATIVO</div>
+        <img src="/static/logo-evento.png" width="120">
+        <h1>FEIJOADA & SAMBA</h1>
+        <span class="lote-tag">{{ lote }}º LOTE ATIVO</span>
         <div class="preco">R$ {{ "%.2f"|format(preco) }}</div>
         <form action="/comprar" method="POST">
-            <input type="text" name="nome" placeholder="Nome Completo" required>
-            <input type="text" name="telefone" placeholder="WhatsApp com DDD" required>
-            <button type="submit">Reservar Ingresso + Feijoada</button>
+            <input type="text" name="nome" placeholder="NOME COMPLETO" required>
+            <input type="text" name="telefone" placeholder="WHATSAPP COM DDD" required>
+            <button type="submit">RESERVAR MEU LUGAR</button>
         </form>
     </div>
 </body>

@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 
-# CONFIGURAÇÃO DE CONEXÃO
+# CONFIGURAÇÃO DE CONEXÃO OTIMIZADA
 uri = os.environ.get('DATABASE_URL')
 if uri and uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
@@ -18,7 +18,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# MODELO DE CLIENTE
+# MODELO COMPLETO: ID, NOME, WHATSAPP, VALOR, LOTE E PRESENÇA
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
@@ -29,12 +29,11 @@ class Cliente(db.Model):
 
 @app.route('/')
 def index():
-    # Verifica quantos ingressos já foram vendidos
     total_vendido = Cliente.query.count()
     if total_vendido >= 150:
-        return "<h1>Ingressos Esgotados!</h1>"
+        return "<h1 style='text-align:center;padding-top:50px;'>INGRESSOS ESGOTADOS!</h1>"
     
-    # Define o preço e lote atual para exibir na home
+    # Lógica de Preço: 1º Lote (75 un) R$ 45 | 2º Lote (75 un) R$ 55
     preco_atual = 45.0 if total_vendido < 75 else 55.0
     lote_atual = 1 if total_vendido < 75 else 2
     
@@ -42,50 +41,45 @@ def index():
 
 @app.route('/comprar', methods=['POST'])
 def comprar():
-    nome = request.form.get('nome')
+    nome = request.form.get('nome').upper()
     telefone = request.form.get('telefone')
-    
     total_vendido = Cliente.query.count()
     
     if total_vendido < 75:
-        valor = 45.0
-        lote = 1
+        valor, lote = 45.0, 1
     elif total_vendido < 150:
-        valor = 55.0
-        lote = 2
+        valor, lote = 55.0, 2
     else:
-        return "<h1>Esgotado!</h1>"
+        return "Esgotado!"
 
     if nome and telefone:
-        novo_cliente = Cliente(nome=nome, telefone=telefone, valor_pago=valor, lote=lote)
-        db.session.add(novo_cliente)
+        novo = Cliente(nome=nome, telefone=telefone, valor_pago=valor, lote=lote)
+        db.session.add(novo)
         db.session.commit()
-        return render_template('obrigado.html', nome=nome, id_cliente=novo_cliente.id, valor=valor)
+        return render_template('obrigado.html', nome=nome, id_cliente=novo.id, valor=valor)
     return redirect(url_for('index'))
 
 @app.route('/checkin/<int:id>')
 def checkin(id):
     cliente = Cliente.query.get_or_404(id)
     if cliente.compareceu:
-        return f"<div style='text-align:center;padding:50px;'><h1 style='color:orange'>ALERTA: {cliente.nome} JÁ ENTROU!</h1></div>"
-    cliente.compareceu = True
-    db.session.commit()
-    return f"<div style='text-align:center;padding:50px;'><h1 style='color:green'>ENTRADA LIBERADA: {cliente.nome}</h1></div>"
+        msg, cor = f"ALERTA: {cliente.nome} JÁ ENTROU!", "orange"
+    else:
+        cliente.compareceu = True
+        db.session.commit()
+        msg, cor = f"LIBERADO: {cliente.nome}!", "green"
+    return f"<div style='text-align:center;padding:50px;font-family:sans-serif;'><h1 style='color:{cor}'>{msg}</h1><a href='/admin-cara-2026'>Voltar</a></div>"
 
 @app.route('/admin-cara-2026')
 def admin():
-    clientes = Cliente.query.all()
-    total_inscritos = len(clientes)
-    total_presentes = len([c for c in clientes if c.compareceu])
-    faturamento_total = sum([c.valor_pago for c in clientes])
-    
-    return render_template('admin.html', 
-                           clientes=clientes, 
-                           total=total_inscritos, 
-                           presentes=total_presentes, 
-                           faturamento=faturamento_total)
+    clientes = Cliente.query.order_by(Cliente.id.desc()).all()
+    faturamento = sum([c.valor_pago for c in clientes])
+    presentes = len([c for c in clientes if c.compareceu])
+    return render_template('admin.html', clientes=clientes, total=len(clientes), faturamento=faturamento, presentes=presentes)
 
 if __name__ == '__main__':
     with app.app_context():
+        # ATENÇÃO: Descomente as duas linhas abaixo APENAS SE der Erro 500 de novo para resetar o banco
+        # db.drop_all() 
         db.create_all()
     app.run(debug=True)

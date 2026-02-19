@@ -3,36 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pagamento | Faz com Fé</title>
+    <title>Seu Ingresso</title>
     <style>
-        body { background: #000; color: #fff; text-align: center; padding: 20px; font-family: sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-        .card { background: rgba(20,20,20,0.95); border: 1px solid #f1c40f; padding: 30px; max-width: 400px; width: 100%; border-radius: 10px; }
-        h3 { color: #f1c40f; margin-bottom: 15px; }
-        .pix-box { background: #fff; padding: 10px; display: inline-block; margin: 20px 0; border-radius: 8px; }
-        .chave-container { background: #1a1a1a; padding: 15px; border: 1px dashed #f1c40f; margin: 15px 0; border-radius: 4px; }
-        .chave-texto { font-size: 0.7rem; color: #aaa; word-break: break-all; display: block; margin-bottom: 10px; }
-        .btn-copiar { background: #333; color: #fff; border: none; padding: 10px; cursor: pointer; font-size: 0.7rem; }
-        .btn-wpp { display: block; background: #25d366; color: white; padding: 15px; text-decoration: none; font-weight: bold; margin-top: 20px; border-radius: 5px; }
+        body { background: #000; color: #fff; text-align: center; font-family: sans-serif; padding: 20px; }
+        .ticket { background: #111; border: 2px solid #f1c40f; padding: 25px; max-width: 350px; margin: auto; border-radius: 15px; }
+        .qr-box { background: #fff; padding: 10px; display: inline-block; margin: 20px 0; border-radius: 8px; }
+        .btn-zap { display: block; background: #25d366; color: #fff; padding: 15px; text-decoration: none; font-weight: bold; border-radius: 5px; margin-top: 15px; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h3>QUASE LÁ, {{ nome }}!</h3>
-        <p>Pague o Pix para garantir sua reserva.</p>
-        <div class="pix-box">
-            <img src="{{ url_for('static', filename='qr-code-pix.png') }}" width="180">
-        </div>
-        <div class="chave-container">
-            <span class="chave-texto" id="chavePix">COLOQUE_AQUI_SEU_PIX_COPIA_E_COLA</span>
-            <button class="btn-copiar" onclick="copyChave()">Copiar Código Pix</button>
-        </div>
-        <a href="https://wa.me/5521980737063?text=Oi! Fiz o Pix para a Feijoada de {{ nome }}." class="btn-wpp">ENVIAR COMPROVANTE</a>
+    <div class="ticket">
+        <h2 style="color:#f1c40f">ESTÁ GARANTIDO!</h2>
+        <p>{{ nome }}</p>
+        <div class="qr-box"><div id="qrcode"></div></div>
+        <p style="font-size:0.8rem; color:#888;">Apresente este QR Code na entrada.</p>
+        <hr style="border:0; border-top:1px solid #333; margin:20px 0;">
+        <p>Valor: R$ {{ "%.2f"|format(valor) }}</p>
+        <a href="https://wa.me/5521980737063?text=Oi! Fiz o Pix do ingresso de {{ nome }}." class="btn-zap">ENVIAR COMPROVANTE PIX</a>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
-        function copyChave() {
-            var text = document.getElementById("chavePix").innerText;
-            navigator.clipboard.writeText(text).then(function() { alert("Pix copiado!"); });
-        }
+        new QRCode(document.getElementById("qrcode"), {
+            text: "https://evento-samba.onrender.com/checkin/{{ id_cliente }}",
+            width: 150, height: 150
+        });
     </script>
 </body>
 </html>
