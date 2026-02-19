@@ -76,10 +76,7 @@ def admin():
     presentes = len([c for c in clientes if c.compareceu])
     return render_template('admin.html', clientes=clientes, total=len(clientes), faturamento=faturamento, presentes=presentes)
 
-# --- INICIALIZAÇÃO COM RESET ---
-if __name__ == '__main__':
+#if __name__ == '__main__':
     with app.app_context():
-        # Estas duas linhas limpam a estrutura antiga e criam a nova (lotes/preços)
-        db.drop_all() 
         db.create_all()
     app.run(debug=True)
