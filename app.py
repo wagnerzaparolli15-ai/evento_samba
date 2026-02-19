@@ -1,80 +1,108 @@
 import os
 import re
+import time
+import requests
+import threading
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from sqlalchemy.exc import IntegrityError
 
 app = Flask(__name__)
 
-# --- CONFIGURAÇÃO DE DATABASE ---
-uri = os.environ.get('DATABASE_URL')
-if uri and uri.startswith("postgres://"):
-    uri = uri.replace("postgres://", "postgresql://", 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = uri or 'sqlite:///fazcomfe.db'
+# CONFIGURAÇÃO DO BANCO (Usando sua Internal URL do Render)
+uri = "postgresql://db_fazcomfe_user:bo24NlcJANvGehkj97PytDoNyoiT696V@dpg-d6b4mq4hncsc7386sfag-a/db_fazcomfe"
+app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'faz-com-fe-2026')
+app.config['SECRET_KEY'] = 'fazcomfe-prod-2026'
 
 db = SQLAlchemy(app)
-migrate = Migrate(app, db)
 
-# --- MODELO ---
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
     telefone = db.Column(db.String(20), nullable=False, unique=True)
-    valor_pago = db.Column(db.Float)
-    lote = db.Column(db.Integer)
-    compareceu = db.Column(db.Boolean, default=False)
+    pago = db.Column(db.Boolean, default=False)
+    valor_base = db.Column(db.Float)
 
-# --- ROTAS ---
+# ---------------------------------------------------------
+# A "PENA" INTEGRADA (Monitoramento 24h no Render)
+# ---------------------------------------------------------
+def monitoramento_mercado_pago():
+    token = "APP_USR-3244228687878580-021915-5528b1d97c9055fab65127d73dc1427d-24221819"
+    headers = {"Authorization": f"Bearer {token}"}
+    url = "https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc"
+
+    while True:
+        try:
+            with app.app_context():
+                response = requests.get(url, headers=headers).json()
+                for p in response.get('results', []):
+                    if p['status'] == 'approved':
+                        valor = p['transaction_amount']
+                        # Identifica ID pelos centavos (Ex: 45.12 -> ID 12)
+                        id_cliente = int(round((valor - int(valor)) * 100))
+                        
+                        cliente = Cliente.query.get(id_cliente)
+                        if cliente and not cliente.pago:
+                            cliente.pago = True
+                            db.session.commit()
+                            print(f"✅ Ingresso #{id_cliente} liberado automaticamente!")
+        except Exception as e:
+            print(f"Erro no monitoramento: {e}")
+        time.sleep(30)
+
+threading.Thread(target=monitoramento_mercado_pago, daemon=True).start()
+
+# ---------------------------------------------------------
+# ROTAS
+# ---------------------------------------------------------
 @app.route('/')
 def index():
-    try:
-        total = Cliente.query.count()
-        preco = 45.0 if total < 75 else 55.0
-        lote = 1 if total < 75 else 2
-        return render_template('index.html', preco=preco, lote=lote)
-    except:
-        return render_template('index.html', preco=45.0, lote=1)
+    total = Cliente.query.count()
+    if total >= 300: return "<h1>Lotes Esgotados!</h1>"
+    # Lotes: 75(45) | 75(55) | 150(60)
+    preco = 45.0 if total < 75 else (55.0 if total < 150 else 60.0)
+    return render_template('index.html', preco=preco)
 
-@app.route('/comprar', methods=['POST'])
-def comprar():
+@app.route('/reservar', methods=['POST'])
+def reservar():
     nome = request.form.get('nome', '').strip().upper()
-    tel = request.form.get('telefone', '').strip()
-    tel_clean = re.sub(r"\D", "", tel)
-    
+    tel = re.sub(r"\D", "", request.form.get('telefone', ''))
+    total = Cliente.query.count()
+    preco = 45.0 if total < 75 else (55.0 if total < 150 else 60.0)
     try:
-        total = Cliente.query.count()
-        valor, num_lote = (45.0, 1) if total < 75 else (55.0, 2)
-        
-        if nome and tel_clean:
-            novo = Cliente(nome=nome, telefone=tel_clean, valor_pago=valor, lote=num_lote)
-            db.session.add(novo)
-            try:
-                db.session.commit()
-            except IntegrityError:
-                db.session.rollback()
-                return render_template('index.html', preco=valor, lote=num_lote, error='Telefone já registrado.')
-
-            base_url = os.environ.get('BASE_URL', request.host_url).rstrip('/')
-            checkin_url = f"{base_url}{url_for('checkin', id=novo.id)}"
-            return render_template('obrigado.html', nome=nome, id_cliente=novo.id, valor=valor, checkin_url=checkin_url)
-    except Exception as e:
+        novo = Cliente(nome=nome, telefone=tel, valor_base=preco)
+        db.session.add(novo)
+        db.session.commit()
+        return redirect(url_for('pagamento', id=novo.id))
+    except:
         db.session.rollback()
-        return f"Erro: {str(e)}"
-    return redirect(url_for('index'))
+        return "Telefone já cadastrado!"
+
+@app.route('/pagamento/<int:id>')
+def pagamento(id):
+    c = Cliente.query.get_or_404(id)
+    valor_pix = c.valor_base + (c.id / 100.0)
+    # Aqui vamos usar o index.html de novo, mas com a instrução do PIX
+    return render_template('pagamento.html', c=c, valor_pix=valor_pix)
+
+@app.route('/ingresso/<int:id>')
+def ingresso(id):
+    c = Cliente.query.get_or_404(id)
+    if not c.pago:
+        return "<h1>Aguardando PIX...</h1><p>Assim que pagar, atualize esta página.</p>"
+    checkin_url = url_for('checkin', id=c.id, _external=True)
+    return render_template('obrigado.html', nome=c.nome, checkin_url=checkin_url)
 
 @app.route('/checkin/<int:id>')
 def checkin(id):
     c = Cliente.query.get_or_404(id)
-    if not c.compareceu:
-        c.compareceu = True
-        db.session.commit()
-        return f"<div style='text-align:center;padding:50px;font-family:sans-serif;'> <h1 style='color:green;font-size:3rem;'>✅ LIBERADO: {c.nome}</h1> <p>Aproveite a feijoada!</p> </div>"
-    return f"<div style='text-align:center;padding:50px;font-family:sans-serif;'> <h1 style='color:red;font-size:3rem;'>❌ ALERTA: {c.nome} JÁ ENTROU!</h1> <p>Ingresso inválido para reuso.</p> </div>"
+    return f"<h1>LIBERADO: {c.nome}</h1>" if c.pago else "<h1>PENDENTE</h1>"
+
+@app.route('/admin_cara')
+def admin():
+    clientes = Cliente.query.all()
+    return render_template('admin.html', clientes=[(c.id, c.nome, c.telefone) for c in clientes])
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
+    with app.app_context(): db.create_all()
     app.run(debug=True)
