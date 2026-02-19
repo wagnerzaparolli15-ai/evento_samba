@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Painel de Vendas - CARA 2026</title>
+    <title>Admin | Faz com Fé</title>
     <style>
         body { background: #000; color: #fff; font-family: sans-serif; padding: 20px; }
         .container { max-width: 800px; margin: auto; border: 1px solid #f1c40f; padding: 20px; border-radius: 10px; }
@@ -15,25 +15,17 @@
 </head>
 <body>
     <div class="container">
-        <h1>GESTOR DE VENDAS - FAZ COM FÉ</h1>
-        <p>Total de Clientes: <strong>{{ clientes|length }}</strong></p>
+        <h1>RESERVAS - FEIOJOADA, SAMBA & BAFAFÁ</h1>
+        <p>Total: <strong>{{ clientes|length }} / 150</strong></p>
         <table>
-            <thead>
-                <tr>
-                    <th>Nome do Cliente</th>
-                    <th>WhatsApp</th>
-                    <th>Ação</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for c in clientes %}
-                <tr>
-                    <td>{{ c.nome }}</td>
-                    <td>{{ c.telefone }}</td>
-                    <td><a href="https://wa.me/{{ c.telefone }}" target="_blank" class="btn-zap">Chamar no Zap</a></td>
-                </tr>
-                {% endfor %}
-            </tbody>
+            <tr><th>Nome</th><th>WhatsApp</th><th>Ação</th></tr>
+            {% for c in clientes %}
+            <tr>
+                <td>{{ c.nome }}</td>
+                <td>{{ c.telefone }}</td>
+                <td><a href="https://wa.me/{{ c.telefone }}" target="_blank" class="btn-zap">WhatsApp</a></td>
+            </tr>
+            {% endfor %}
         </table>
     </div>
 </body>

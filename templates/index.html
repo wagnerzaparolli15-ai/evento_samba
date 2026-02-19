@@ -3,52 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <title>Feijoada, Samba & Bafafá</title>
-
     <meta property="og:title" content="Feijoada, Samba & Bafafá">
-    <meta property="og:description" content="Garanta seu ingresso para o evento pela Faz com Fé Produções.">
     <meta property="og:image" content="{{ url_for('static', filename='logo-evento.png', _external=True) }}">
-    <meta property="og:url" content="https://evento-samba.onrender.com">
-    <meta property="og:type" content="website">
-
     <style>
-        body { 
-            background: url("{{ url_for('static', filename='plano-fundo.jpg') }}") no-repeat center center fixed; 
-            background-size: cover;
-            color: #fff; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .card { 
-            background: rgba(0, 0, 0, 0.85); 
-            padding: 40px; 
-            border-radius: 20px; 
-            border: 2px solid #f1c40f; 
-            text-align: center;
-            max-width: 400px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-        }
-        .logo { width: 180px; margin-bottom: 10px; }
-        h1 { color: #f1c40f; margin: 10px 0; font-size: 1.8rem; text-transform: uppercase; }
-        input { display: block; width: 100%; margin: 15px 0; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #222; color: #fff; box-sizing: border-box; }
-        button { background: #f1c40f; color: #000; border: none; padding: 18px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1.1rem; text-transform: uppercase; transition: 0.3s; }
-        button:hover { background: #fff; transform: scale(1.02); }
+        body { background: url("{{ url_for('static', filename='plano-fundo.jpg') }}") no-repeat center center fixed; background-size: cover; font-family: sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .card { background: rgba(0, 0, 0, 0.9); padding: 30px; border-radius: 15px; border: 2px solid #f1c40f; text-align: center; width: 90%; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .logo { width: 150px; margin-bottom: 20px; }
+        h1 { color: #f1c40f; font-size: 1.6rem; margin-bottom: 25px; text-transform: uppercase; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #333; background: #222; color: #fff; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; background: #f1c40f; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
+        button:hover { background: #fff; color: #000; }
     </style>
 </head>
 <body>
     <div class="card">
-        <img src="{{ url_for('static', filename='logo-evento.png') }}" alt="Logo CARA" class="logo">
+        <img src="{{ url_for('static', filename='logo-evento.png') }}" class="logo">
         <h1>Feijoada, Samba & Bafafá</h1>
-        
         <form action="/comprar" method="POST">
-            <input type="text" name="nome" placeholder="Seu Nome Completo" required>
-            <input type="text" name="telefone" placeholder="Seu WhatsApp (DDD + Número)" required>
-            <button type="submit">RESERVAR MEU INGRESSO</button>
+            <input type="text" name="nome" placeholder="Nome Completo" required>
+            <input type="text" name="telefone" placeholder="WhatsApp (DDD + Número)" required>
+            <button type="submit">Reservar Meu Ingresso</button>
         </form>
     </div>
 </body>
