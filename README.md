@@ -1,60 +1,36 @@
-# Evento Samba — Guia rápido de otimização e deploy
+# 🥁 Pagode do Cara - Sistema de Ingressos Automático
 
-Objetivo: rodar localmente (SQLite) e em produção no Render (Postgres), mantendo QR funcional.
+Este é o sistema oficial do **Pagode do Cara**, projetado para rodar de forma independente no Render, gerindo vendas de ingressos via PIX com confirmação automática através do Mercado Pago.
 
-Passos principais:
+## 🚀 Como Funciona a Magia (A Pena)
+O sistema utiliza uma lógica de identificação por centavos:
+1. O cliente faz a reserva (R$ 45,00).
+2. O sistema gera um valor único usando o ID do cliente nos centavos (Ex: Cliente #15 paga **R$ 45,15**).
+3. A "Pena" (script de monitorização) varre o seu Mercado Pago a cada 30 segundos.
+4. Quando encontra um pagamento de R$ 45,15, ela sabe que é do Cliente #15 e liberta o ingresso automaticamente.
 
-1) Dependências
-- Instale no venv:
+## 🛠️ Tecnologias Utilizadas
+- **Backend:** Flask (Python)
+- **Banco de Dados:** PostgreSQL (Render)
+- **Servidor Web:** Gunicorn
+- **Integração:** API do Mercado Pago
 
-```powershell
-venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-```
+## 📦 Estrutura de Ficheiros
+- `app.py`: O cérebro do sistema e a automação.
+- `static/`: Onde devem estar a sua `logo.png` e `fundo.jpg`.
+- `templates/`: As páginas visuais (`index`, `pagamento`, `obrigado`, `admin`).
 
-2) Variáveis de ambiente no Render
-- `DATABASE_URL` — URL do Postgres (Render fornece).
-- `SECRET_KEY` — string aleatória.
-- `BASE_URL` — (opcional) `https://seu-dominio.onrender.com` para construir QR com domínio fixo.
+## ⚙️ Configuração no Render (Settings)
+Para o sistema funcionar sem erros de SSL ou de porta, use estas configurações no painel do Render:
+- **Build Command:** `pip install -r requirements.txt`
+- **Start Command:** `gunicorn app:app --workers 1 --threads 1 --bind 0.0.0.0:10000`
+- **Environment Variables:**
+  - `PORT`: 10000
+  - `PYTHON_VERSION`: 3.14 (ou a versão que estiver a usar)
 
-3) Migrações (recomendado)
-- Instalado `Flask-Migrate`.
-- Com `FLASK_APP=app.py` configurado, execute:
+## 📊 Painel de Administração
+Pode conferir a lista de quem já pagou em:
+`https://evento-samba.onrender.com/admin_cara`
 
-```bash
-flask db init      # apenas uma vez
-flask db migrate -m "Initial"
-flask db upgrade
-```
-
-Se preferir não usar migrações, crie tabelas direto (one-off no Render):
-
-```bash
-python -c "from app import db; db.create_all()"
-```
-
-4) Comportamento do app
-- `app.py` agora normaliza telefones (apenas dígitos) e impede duplicação (coluna `telefone` com `unique=True`).
-- Em caso de duplicata, usuário recebe mensagem amigável no `index`.
-- A URL do QR (`checkin_url`) é construída a partir de `BASE_URL` quando definida; caso contrário usa o host da requisição — assim funciona local e em produção.
-
-5) Procfile para o Render
-
-```
-web: gunicorn app:app --log-file -
-```
-
-6) Testes rápidos locais
-- Inicie app:
-
-```powershell
-venv\Scripts\python.exe app.py
-```
-
-- Acesse `http://127.0.0.1:5000`, compre um ingresso e verifique QR na página de obrigado.
-
-Se quiser, eu posso:
-- Gerar a pasta `migrations/` local com `flask db init/migrate` executados aqui (opção A).
-- Criar um `smoke-test` automatizado que verifica compra e /admin (opção C).
-
-Responda com qual opção prefere (A, C, ou ambos).
+---
+*Faz com Fé Produções - 2026*
