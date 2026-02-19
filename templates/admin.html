@@ -1,30 +1,21 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Admin Faz com Fé</title>
-    <style>
-        body { background: #000; color: #fff; font-family: sans-serif; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 12px; border: 1px solid #333; text-align: left; }
-        th { background: #111; color: #f1c40f; }
-        .stat-box { background: #111; padding: 20px; border: 1px solid #f1c40f; display: inline-block; margin-right: 20px; text-align: center; }
-    </style>
+<title>Admin</title>
 </head>
 <body>
-    <h1>Gestão do Evento</h1>
-    <div class="stat-box"><h3>Vendas</h3><p>{{ total }}</p></div>
-    <div class="stat-box"><h3>Caixa</h3><p>R$ {{ "%.2f"|format(faturamento) }}</p></div>
-    <table>
-        <tr><th>ID</th><th>Nome</th><th>Valor</th><th>Status</th></tr>
-        {% for c in clientes %}
-        <tr>
-            <td>#{{ c.id }}</td>
-            <td>{{ c.nome }}</td>
-            <td>R$ {{ "%.2f"|format(c.valor_pago) }}</td>
-            <td>{{ "✅ OK" if c.compareceu else "❌ AUSENTE" }}</td>
-        </tr>
-        {% endfor %}
-    </table>
+<h1>Lista de Clientes</h1>
+<table border="1">
+<tr><th>ID</th><th>Nome</th><th>Telefone</th></tr>
+{% for cliente in clientes %}
+<tr>
+<td>{{ cliente[0] }}</td>
+<td>{{ cliente[1] }}</td>
+<td>{{ cliente[2] }}</td>
+</tr>
+{% endfor %}
+</table>
+<br>
+<a href="/">Voltar</a>
 </body>
 </html>

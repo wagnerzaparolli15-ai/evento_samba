@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 
-# CONFIGURAÇÃO DE CONEXÃO BLINDADA
+# --- CONFIGURAÇÃO DE CONEXÃO ---
 uri = os.environ.get('DATABASE_URL')
 if uri and uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
@@ -16,6 +16,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+# --- MODELO DE DADOS ---
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
@@ -24,6 +25,7 @@ class Cliente(db.Model):
     lote = db.Column(db.Integer)
     compareceu = db.Column(db.Boolean, default=False)
 
+# --- ROTAS ---
 @app.route('/')
 def index():
     try:
@@ -47,8 +49,8 @@ def comprar():
             db.session.commit()
             return render_template('obrigado.html', nome=nome, id_cliente=novo.id, valor=valor)
     except Exception as e:
-        print(f"Erro no Banco: {e}")
-        return "Erro ao processar reserva. Tente novamente."
+        db.session.rollback()
+        return f"Erro ao processar: {str(e)}"
     return redirect(url_for('index'))
 
 @app.route('/checkin/<int:id>')
@@ -60,7 +62,7 @@ def checkin(id):
         msg = f"LIBERADO: {c.nome}"
     else:
         msg = f"ALERTA: {c.nome} JÁ ENTROU!"
-    return f"<div style='text-align:center;padding:50px;font-family:sans-serif;'><h1>{msg}</h1><a href='/admin-cara-2026'>Voltar</a></div>"
+    return f"<h1>{msg}</h1><br><a href='/admin-cara-2026'>Voltar</a>"
 
 @app.route('/admin-cara-2026')
 def admin():
@@ -68,7 +70,10 @@ def admin():
     faturamento = sum([c.valor_pago for c in clientes])
     return render_template('admin.html', clientes=clientes, total=len(clientes), faturamento=faturamento)
 
+# --- INICIALIZAÇÃO COM RESET DE SEGURANÇA ---
 if __name__ == '__main__':
     with app.app_context():
+        # Descomente a linha abaixo (remova o #) caso o Erro 500 continue
+        # db.drop_all() 
         db.create_all()
     app.run(debug=False)
