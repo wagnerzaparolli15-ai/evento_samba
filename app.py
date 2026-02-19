@@ -4,13 +4,11 @@ from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 
-# --- CONFIGURAÇÃO DO BANCO DE DATOS (LIMPA) ---
-# Otimiza a URL do banco para o padrão exigido pelo SQLAlchemy e Render
+# --- CONFIGURAÇÃO DO BANCO DE DATOS (OTIMIZAÇÃO MÁXIMA) ---
 uri = os.environ.get('DATABASE_URL')
 if uri and uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
 
-# Força a conexão segura (SSL) para evitar erros no Render
 if uri and "sslmode" not in uri:
     separator = "&" if "?" in uri else "?"
     uri += f"{separator}sslmode=require"
@@ -20,7 +18,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# --- MODELO DE DADOS ---
+# --- MODELO DE DADOS (LOTES E PRESENÇA) ---
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
@@ -33,22 +31,24 @@ class Cliente(db.Model):
 
 @app.route('/')
 def index():
-    """Página de vendas com lógica de lotes automática"""
     try:
         total_vendido = Cliente.query.count()
+        # Lógica: 1º lote (75 un) R$ 45 | 2º lote (75 un) R$ 55
         preco = 45.0 if total_vendido < 75 else 55.0
         lote = 1 if total_vendido < 75 else 2
         return render_template('index.html', preco=preco, lote=lote)
-    except:
-        return "Erro ao conectar ao banco. Verifique a DATABASE_URL no Render."
+    except Exception as e:
+        return f"Erro de conexão: {str(e)}. Verifique a DATABASE_URL no Render."
 
 @app.route('/comprar', methods=['POST'])
 def comprar():
-    """Processa a reserva e gera o ingresso"""
     nome = request.form.get('nome', '').upper()
     tel = request.form.get('telefone', '')
     
     total = Cliente.query.count()
+    if total >= 150:
+        return "<h1>ESGOTADO!</h1>"
+        
     valor, num_lote = (45.0, 1) if total < 75 else (55.0, 2)
 
     if nome and tel:
@@ -60,7 +60,6 @@ def comprar():
 
 @app.route('/checkin/<int:id>')
 def checkin(id):
-    """Validação de QR Code na Portaria"""
     c = Cliente.query.get_or_404(id)
     if not c.compareceu:
         c.compareceu = True
@@ -68,19 +67,19 @@ def checkin(id):
         msg = f"LIBERADO: {c.nome}"
     else:
         msg = f"ALERTA: {c.nome} JÁ ENTROU!"
-    return f"<h1>{msg}</h1><br><a href='/'>Voltar</a>"
+    return f"<h1>{msg}</h1><br><a href='/admin-cara-2026'>Voltar</a>"
 
 @app.route('/admin-cara-2026')
 def admin():
-    """Painel de Gestão e Faturamento"""
     clientes = Cliente.query.all()
     faturamento = sum([c.valor_pago for c in clientes])
     presentes = len([c for c in clientes if c.compareceu])
     return render_template('admin.html', clientes=clientes, total=len(clientes), faturamento=faturamento, presentes=presentes)
 
-# --- INICIALIZAÇÃO ---
+# --- INICIALIZAÇÃO COM RESET ---
 if __name__ == '__main__':
     with app.app_context():
-        # Cria as tabelas se elas não existirem
+        # Estas duas linhas limpam a estrutura antiga e criam a nova (lotes/preços)
+        db.drop_all() 
         db.create_all()
     app.run(debug=True)
