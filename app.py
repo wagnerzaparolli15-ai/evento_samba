@@ -5,7 +5,7 @@ from sqlalchemy import text
 
 app = Flask(__name__)
 
-# CONFIGURAÇÃO DE CONEXÃO (Render)
+# CONEXÃO INTERNA RENDER
 uri = "postgresql://db_fazcomfe_user:bo24NlcJANvGehkj97PytDoNyoiT696V@dpg-d6b4mq4hncsc7386sfag-a/db_fazcomfe?sslmode=require"
 app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -14,7 +14,6 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True, "pool_size": 1
 
 db = SQLAlchemy(app)
 
-# MODELO DO BANCO
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
@@ -38,18 +37,15 @@ def monitor_mp():
                         if c and not c.pago:
                             c.pago = True
                             db.session.commit()
-                            print(f"✅ Pagamento confirmado: {c.nome}")
         except: pass
         time.sleep(30)
 
-# INICIALIZAÇÃO (Cria as tabelas automaticamente)
 with app.app_context():
     db.create_all()
 
-# Inicia a Pena em segundo plano
 threading.Thread(target=monitor_mp, daemon=True).start()
 
-# --- ROTAS CONECTADAS AOS SEUS HTMLS ---
+# --- ROTAS ---
 
 @app.route('/')
 def index():
@@ -70,34 +66,30 @@ def reservar():
         return redirect(url_for('pagamento', id=novo.id))
     except:
         db.session.rollback()
-        # Se o telefone já existir, ele avisa e dá opção de voltar
-        return "<h1>Erro: Telefone já cadastrado!</h1><p>Você já fez uma reserva. <a href='/'>Voltar para o início</a></p>"
+        return render_template('feedback.html', tipo='erro', msg="Este telefone já possui uma reserva.")
 
 @app.route('/pagamento/<int:id>')
 def pagamento(id):
     c = Cliente.query.get_or_404(id)
     valor_pix = c.valor_base + (c.id / 100.0)
-    # Envia os dados para o seu pagamento.html
     return render_template('pagamento.html', c=c, valor_pix=valor_pix)
 
 @app.route('/ingresso/<int:id>')
 def ingresso(id):
     c = Cliente.query.get_or_404(id)
     if not c.pago:
-        return "<h1>Aguardando PIX...</h1><p>O sistema confere a cada 30 segundos.</p>"
+        return render_template('feedback.html', tipo='aguardando', id=c.id)
     checkin_url = url_for('checkin', id=c.id, _external=True)
-    return render_template('obrigado.html', nome=c.nome, checkin_url=checkin_url)
+    return render_template('obrigado.html', nome=c.nome, checkin_url=checkin_url, id_reserva=c.id)
 
 @app.route('/checkin/<int:id>')
 def checkin(id):
     c = Cliente.query.get_or_404(id)
-    status = "✅ LIBERADO" if c.pago else "❌ NÃO PAGO"
-    return f"<div style='text-align:center; padding-top:50px;'><h1>{status}</h1><h2>{c.nome}</h2></div>"
+    return render_template('feedback.html', tipo='checkin', c=c)
 
 @app.route('/admin_cara')
 def admin():
-    # Pega os clientes para o seu admin.html
-    clientes = Cliente.query.all()
+    clientes = Cliente.query.order_by(Cliente.id.desc()).all()
     return render_template('admin.html', clientes=clientes)
 
 if __name__ == '__main__':
