@@ -11,6 +11,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True, "pool_recycle": 300}
 
 db = SQLAlchemy(app)
+
+# TOKEN INSERIDO: Sua chave oficial de produção
 sdk = mercadopago.SDK("APP_USR-3244228687878580-021915-5528b1d97c9055fab65127d73dc1427d-24221819")
 
 class Cliente(db.Model):
@@ -35,20 +37,24 @@ def reservar():
     if not nome or not tel:
         return "Erro: Nome e telefone são obrigatórios."
     try:
+        # Tenta cadastrar, se o telefone já existir ele vai para o pagamento direto
+        cliente_existente = Cliente.query.filter_by(telefone=tel).first()
+        if cliente_existente:
+            return redirect(url_for('pagamento', id=cliente_existente.id))
+            
         novo = Cliente(nome=nome, telefone=tel)
         db.session.add(novo)
         db.session.commit()
         return redirect(url_for('pagamento', id=novo.id))
-    except Exception:
+    except Exception as e:
         db.session.rollback()
-        return "Erro: Telefone ja cadastrado ou erro no banco."
+        return f"Erro no cadastro: {str(e)}"
 
 @app.route('/pagamento/<int:id>')
 def pagamento(id):
     c = Cliente.query.get_or_404(id)
     
     try:
-        # Pega o primeiro nome com segurança
         primeiro_nome = c.nome.split()[0] if c.nome else "Cliente"
         
         payment_data = {
@@ -62,12 +68,11 @@ def pagamento(id):
             }
         }
         
-        # Chamada da API com segurança
         payment_response = sdk.payment().create(payment_data)
         payment = payment_response.get("response")
 
         if not payment or "point_of_interaction" not in payment:
-            return "Erro ao gerar PIX: Verifique sua conexão ou Token do Mercado Pago."
+            return "Erro ao gerar PIX: Verifique sua conta no Mercado Pago."
 
         pix_codigo = payment['point_of_interaction']['transaction_data']['qr_code']
         qrcode_base64 = payment['point_of_interaction']['transaction_data']['qr_code_base64']
@@ -78,8 +83,7 @@ def pagamento(id):
         return render_template('pagamento.html', c=c, pix_codigo=pix_codigo, qrcode_base64=qrcode_base64)
     
     except Exception as e:
-        print(f"Erro MP: {e}")
-        return "Ocorreu um erro ao processar o pagamento. Tente novamente em instantes."
+        return f"Erro de comunicação: {str(e)}"
 
 @app.route('/ingresso/<int:id>')
 def ingresso(id):
