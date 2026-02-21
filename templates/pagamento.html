@@ -2,21 +2,54 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pagamento - Pagode do Cara</title>
     <style>
-        body { background: #000 url('/static/fundo.jpg'); background-size: cover; color: white; font-family: sans-serif; text-align: center; padding: 40px; }
-        .box { background: rgba(0,0,0,0.9); border: 2px solid #f1c40f; padding: 30px; border-radius: 20px; display: inline-block; }
-        .valor { color: #2ecc71; font-size: 3.5rem; font-weight: bold; margin: 20px 0; }
-        .btn { display: block; background: #f1c40f; color: #000; padding: 15px; text-decoration: none; font-weight: bold; border-radius: 8px; }
+        body { background: #000 url('/static/fundo.jpg') no-repeat center fixed; background-size: cover; color: white; font-family: 'Segoe UI', sans-serif; text-align: center; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .container { background: rgba(0,0,0,0.9); padding: 30px; border-radius: 20px; border: 2px solid #f1c40f; width: 90%; max-width: 400px; box-shadow: 0 0 20px rgba(241, 196, 15, 0.3); }
+        .valor { font-size: 45px; color: #2ecc71; margin: 20px 0; font-weight: bold; border: 2px dashed #2ecc71; padding: 10px; border-radius: 10px; }
+        .qrcode-pix { background: white; padding: 10px; border-radius: 10px; margin: 20px auto; width: 200px; height: 200px; }
+        .chave-box { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #444; }
+        .chave-texto { word-break: break-all; color: #f1c40f; font-family: monospace; font-size: 14px; display: block; margin-bottom: 10px; }
+        .btn-copiar { background: #555; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .btn-confirmar { display: block; background: #f1c40f; color: #000; padding: 15px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 20px; transition: 0.3s; font-size: 18px; }
+        .btn-confirmar:hover { background: #d4ac0d; }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h2 style="color:#f1c40f">PAGUE O VALOR EXATO:</h2>
+    <div class="container">
+        <img src="/static/logo.png" style="width: 120px; margin-bottom: 10px;">
+        <h1 style="color: #f1c40f;">PAGAMENTO PIX</h1>
+        
+        <p>Escaneie o QR Code abaixo:</p>
+        <div class="qrcode-pix">
+            <img src="https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl={{ chave }}&choe=UTF-8" alt="QR Code Pix" style="width:100%">
+        </div>
+
+        <p>Ou pague o valor <b>EXATO</b>:</p>
         <div class="valor">R$ {{ "%.2f"|format(valor_pix) }}</div>
-        <p>Chave PIX (Celular): <b>21 97595-4118</b></p>
-        <p style="color: #e74c3c; font-weight: bold;">⚠️ NÃO ALTERE OS CENTAVOS PARA VALIDAR!</p>
-        <a href="/ingresso/{{ c.id }}" class="btn">JÁ PAGUEI, VER MEU INGRESSO</a>
+        
+        <div class="chave-box">
+            <span style="font-size: 0.8rem; display:block; margin-bottom:5px;">Chave Aleatória (Mercado Pago):</span>
+            <span id="chavePix" class="chave-texto">{{ chave }}</span>
+            <button class="btn-copiar" onclick="copiarChave()">COPIAR CHAVE</button>
+        </div>
+
+        <p style="color: #e74c3c; font-weight: bold; font-size: 14px;">⚠️ NÃO ALTERE OS CENTAVOS PARA SER AUTOMÁTICO!</p>
+        <a href="/ingresso/{{ c.id }}" class="btn-confirmar">JÁ PAGUEI, VER MEU INGRESSO</a>
     </div>
+
+    <script>
+    function copiarChave() {
+        var texto = document.getElementById("chavePix").innerText;
+        var elem = document.createElement("textarea");
+        document.body.appendChild(elem);
+        elem.value = texto;
+        elem.select();
+        document.execCommand("copy");
+        document.body.removeChild(elem);
+        alert("Chave Pix copiada!");
+    }
+    </script>
 </body>
 </html>

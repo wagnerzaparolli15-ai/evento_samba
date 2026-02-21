@@ -3,11 +3,9 @@ from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-
-# CONFIGURAÇÃO DE BANCO (Render ou Local)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:///evento.db")
+uri = "postgresql://db_fazcomfe_user:bo24NlcJANvGehkj97PytDoNyoiT696V@dpg-d6b4mq4hncsc7386sfag-a/db_fazcomfe?sslmode=require"
+app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'fazcomfe2026'
 
 db = SQLAlchemy(app)
 
@@ -16,9 +14,10 @@ class Cliente(db.Model):
     nome = db.Column(db.String(100), nullable=False)
     telefone = db.Column(db.String(20), nullable=False, unique=True)
     pago = db.Column(db.Boolean, default=False)
+    utilizado = db.Column(db.Boolean, default=False) # NOVA TRAVA DE SEGURANÇA
     valor_base = db.Column(db.Float)
 
-# A PENA (MONITORAMENTO MERCADO PAGO)
+# MONITORAMENTO (A PENA)
 def monitor_mp():
     token = "APP_USR-3244228687878580-021915-5528b1d97c9055fab65127d73dc1427d-24221819"
     headers = {"Authorization": f"Bearer {token}"}
@@ -42,8 +41,6 @@ with app.app_context():
 
 threading.Thread(target=monitor_mp, daemon=True).start()
 
-# --- ROTAS PERSONALIZADAS ---
-
 @app.route('/')
 def index():
     total = Cliente.query.count()
@@ -63,32 +60,35 @@ def reservar():
         return redirect(url_for('pagamento', id=novo.id))
     except:
         db.session.rollback()
-        return render_template('templates-feedback.html', tipo='erro', msg="Este telefone já possui uma reserva ativa.")
+        return "Erro: Telefone ja cadastrado."
 
 @app.route('/pagamento/<int:id>')
 def pagamento(id):
     c = Cliente.query.get_or_404(id)
     valor_pix = c.valor_base + (c.id / 100.0)
-    return render_template('pagamento.html', c=c, valor_pix=valor_pix)
+    chave_aleatoria = "5e751c11-535c-4e47-97d8-3fbb70d87151"
+    return render_template('pagamento.html', c=c, valor_pix=valor_pix, chave=chave_aleatoria)
 
 @app.route('/ingresso/<int:id>')
 def ingresso(id):
     c = Cliente.query.get_or_404(id)
     if not c.pago:
         return render_template('templates-feedback.html', tipo='aguardando', id=c.id)
-    
     checkin_url = url_for('checkin', id=c.id, _external=True)
     return render_template('obrigado.html', nome=c.nome, checkin_url=checkin_url, id_reserva=c.id)
 
 @app.route('/checkin/<int:id>')
 def checkin(id):
     c = Cliente.query.get_or_404(id)
-    return render_template('templates-feedback.html', tipo='checkin', c=c)
-
-@app.route('/admin_cara')
-def admin():
-    clientes = Cliente.query.order_by(Cliente.id.desc()).all()
-    return render_template('admin.html', clientes=clientes)
+    if not c.pago:
+        return "<h1>ERRO: PAGAMENTO NÃO LOCALIZADO</h1>", 403
+    if c.utilizado:
+        return f"<h1>❌ QR CODE INVÁLIDO!</h1><p>Este ingresso ja foi usado por {c.nome}.</p>", 410
+    
+    # SE PASSAR POR TUDO, MARCA COMO USADO AGORA
+    c.utilizado = True
+    db.session.commit()
+    return f"<h1>✅ ACESSO LIBERADO!</h1><h2>Bem-vindo, {c.nome}!</h2>"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
