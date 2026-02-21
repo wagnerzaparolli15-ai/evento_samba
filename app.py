@@ -82,8 +82,6 @@ def ingresso(id):
     checkin_url = url_for('checkin', id=c.id, _external=True)
     return render_template('obrigado.html', nome=c.nome, checkin_url=checkin_url, id_reserva=c.id)
 
-# --- PORTARIA E DASHBOARD ---
-
 @app.route('/checkin/<int:id>')
 def checkin(id):
     c = Cliente.query.get_or_404(id)
@@ -97,10 +95,17 @@ def checkin(id):
 
 @app.route('/dashboard-cara')
 def dashboard():
+    msg = request.args.get('msg')
     pagos = Cliente.query.filter_by(pago=True).count()
     na_casa = Cliente.query.filter_by(utilizado=True).count()
     clientes = Cliente.query.order_by(Cliente.id.desc()).all()
-    return render_template('dashboard.html', pagos=pagos, na_casa=na_casa, faturamento=pagos*45, clientes=clientes)
+    return render_template('dashboard.html', pagos=pagos, na_casa=na_casa, faturamento=pagos*45, clientes=clientes, msg=msg)
+
+@app.route('/admin/reset-total', methods=['POST'])
+def reset_total():
+    db.drop_all()
+    db.create_all()
+    return redirect(url_for('dashboard', msg="SISTEMA ZERADO COM SUCESSO!"))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
