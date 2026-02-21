@@ -1,16 +1,13 @@
 import os, re, time, requests, threading
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import text
 
 app = Flask(__name__)
 
-# CONEXÃO INTERNA RENDER
-uri = "postgresql://db_fazcomfe_user:bo24NlcJANvGehkj97PytDoNyoiT696V@dpg-d6b4mq4hncsc7386sfag-a/db_fazcomfe?sslmode=require"
-app.config['SQLALCHEMY_DATABASE_URI'] = uri
+# CONFIGURAÇÃO DE BANCO (Render ou Local)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:///evento.db")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'fazcomfe2026'
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True, "pool_size": 1, "max_overflow": 0}
 
 db = SQLAlchemy(app)
 
@@ -45,7 +42,7 @@ with app.app_context():
 
 threading.Thread(target=monitor_mp, daemon=True).start()
 
-# --- ROTAS ---
+# --- ROTAS PERSONALIZADAS ---
 
 @app.route('/')
 def index():
@@ -66,7 +63,7 @@ def reservar():
         return redirect(url_for('pagamento', id=novo.id))
     except:
         db.session.rollback()
-        return render_template('feedback.html', tipo='erro', msg="Este telefone já possui uma reserva.")
+        return render_template('templates-feedback.html', tipo='erro', msg="Este telefone já possui uma reserva ativa.")
 
 @app.route('/pagamento/<int:id>')
 def pagamento(id):
@@ -78,14 +75,15 @@ def pagamento(id):
 def ingresso(id):
     c = Cliente.query.get_or_404(id)
     if not c.pago:
-        return render_template('feedback.html', tipo='aguardando', id=c.id)
+        return render_template('templates-feedback.html', tipo='aguardando', id=c.id)
+    
     checkin_url = url_for('checkin', id=c.id, _external=True)
     return render_template('obrigado.html', nome=c.nome, checkin_url=checkin_url, id_reserva=c.id)
 
 @app.route('/checkin/<int:id>')
 def checkin(id):
     c = Cliente.query.get_or_404(id)
-    return render_template('feedback.html', tipo='checkin', c=c)
+    return render_template('templates-feedback.html', tipo='checkin', c=c)
 
 @app.route('/admin_cara')
 def admin():
@@ -93,5 +91,4 @@ def admin():
     return render_template('admin.html', clientes=clientes)
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
