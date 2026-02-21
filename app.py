@@ -1,6 +1,7 @@
 import os, re, time, requests, threading
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text  # IMPORTANTE: Adicionado para o comando SQL
 
 app = Flask(__name__)
 uri = "postgresql://db_fazcomfe_user:bo24NlcJANvGehkj97PytDoNyoiT696V@dpg-d6b4mq4hncsc7386sfag-a/db_fazcomfe?sslmode=require"
@@ -14,8 +15,18 @@ class Cliente(db.Model):
     nome = db.Column(db.String(100), nullable=False)
     telefone = db.Column(db.String(20), nullable=False, unique=True)
     pago = db.Column(db.Boolean, default=False)
-    utilizado = db.Column(db.Boolean, default=False) # NOVA TRAVA DE SEGURANÇA
+    utilizado = db.Column(db.Boolean, default=False) 
     valor_base = db.Column(db.Float)
+
+# --- CORREÇÃO AUTOMÁTICA DO BANCO ---
+with app.app_context():
+    db.create_all() # Cria tabelas se não existirem
+    try:
+        # Tenta adicionar a coluna 'utilizado' caso a tabela já exista sem ela
+        db.session.execute(text("ALTER TABLE cliente ADD COLUMN utilizado BOOLEAN DEFAULT FALSE;"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback() # Ignora erro se a coluna já existir
 
 # MONITORAMENTO (A PENA)
 def monitor_mp():
@@ -35,9 +46,6 @@ def monitor_mp():
                             db.session.commit()
         except: pass
         time.sleep(30)
-
-with app.app_context():
-    db.create_all()
 
 threading.Thread(target=monitor_mp, daemon=True).start()
 
@@ -85,7 +93,6 @@ def checkin(id):
     if c.utilizado:
         return f"<h1>❌ QR CODE INVÁLIDO!</h1><p>Este ingresso ja foi usado por {c.nome}.</p>", 410
     
-    # SE PASSAR POR TUDO, MARCA COMO USADO AGORA
     c.utilizado = True
     db.session.commit()
     return f"<h1>✅ ACESSO LIBERADO!</h1><h2>Bem-vindo, {c.nome}!</h2>"
