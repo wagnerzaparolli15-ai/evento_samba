@@ -1,12 +1,18 @@
 import os, re, time, requests, threading
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import text  # IMPORTANTE: Adicionado para o comando SQL
+from sqlalchemy import text
 
 app = Flask(__name__)
+
+# Configuração com Estabilidade de Conexão (Pool Pre-Ping)
 uri = "postgresql://db_fazcomfe_user:bo24NlcJANvGehkj97PytDoNyoiT696V@dpg-d6b4mq4hncsc7386sfag-a/db_fazcomfe?sslmode=require"
 app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    "pool_pre_ping": True, 
+    "pool_recycle": 300
+}
 
 db = SQLAlchemy(app)
 
@@ -18,15 +24,14 @@ class Cliente(db.Model):
     utilizado = db.Column(db.Boolean, default=False) 
     valor_base = db.Column(db.Float)
 
-# --- CORREÇÃO AUTOMÁTICA DO BANCO ---
+# --- CORREÇÃO AUTOMÁTICA E ESTABILIZAÇÃO ---
 with app.app_context():
-    db.create_all() # Cria tabelas se não existirem
+    db.create_all()
     try:
-        # Tenta adicionar a coluna 'utilizado' caso a tabela já exista sem ela
         db.session.execute(text("ALTER TABLE cliente ADD COLUMN utilizado BOOLEAN DEFAULT FALSE;"))
         db.session.commit()
     except Exception:
-        db.session.rollback() # Ignora erro se a coluna já existir
+        db.session.rollback()
 
 # MONITORAMENTO (A PENA)
 def monitor_mp():
@@ -44,7 +49,8 @@ def monitor_mp():
                         if c and not c.pago:
                             c.pago = True
                             db.session.commit()
-        except: pass
+        except Exception: 
+            pass
         time.sleep(30)
 
 threading.Thread(target=monitor_mp, daemon=True).start()
@@ -66,7 +72,7 @@ def reservar():
         db.session.add(novo)
         db.session.commit()
         return redirect(url_for('pagamento', id=novo.id))
-    except:
+    except Exception:
         db.session.rollback()
         return "Erro: Telefone ja cadastrado."
 
