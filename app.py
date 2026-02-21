@@ -32,50 +32,63 @@ def index():
 def reservar():
     nome = request.form.get('nome', '').upper().strip()
     tel = re.sub(r"\D", "", request.form.get('telefone', ''))
+    if not nome or not tel:
+        return "Erro: Nome e telefone são obrigatórios."
     try:
         novo = Cliente(nome=nome, telefone=tel)
         db.session.add(novo)
         db.session.commit()
         return redirect(url_for('pagamento', id=novo.id))
-    except:
+    except Exception:
         db.session.rollback()
-        return "Erro: Telefone ja cadastrado."
+        return "Erro: Telefone ja cadastrado ou erro no banco."
 
 @app.route('/pagamento/<int:id>')
 def pagamento(id):
     c = Cliente.query.get_or_404(id)
     
-    payment_data = {
-        "transaction_amount": 45.00,
-        "description": f"Ingresso + Feijoada - {c.nome}",
-        "payment_method_id": "pix",
-        "payer": {
-            "email": "caragrossooficial@gmail.com",
-            "first_name": c.nome.split()[0],
-            "last_name": "Cliente"
+    try:
+        # Pega o primeiro nome com segurança
+        primeiro_nome = c.nome.split()[0] if c.nome else "Cliente"
+        
+        payment_data = {
+            "transaction_amount": 45.00,
+            "description": f"Ingresso + Feijoada - {c.nome}",
+            "payment_method_id": "pix",
+            "payer": {
+                "email": "caragrossooficial@gmail.com",
+                "first_name": primeiro_nome,
+                "last_name": "Samba"
+            }
         }
-    }
-    
-    payment_response = sdk.payment().create(payment_data)
-    payment = payment_response["response"]
-    
-    pix_codigo = payment['point_of_interaction']['transaction_data']['qr_code']
-    qrcode_base64 = payment['point_of_interaction']['transaction_data']['qr_code_base64']
-    
-    c.mp_id = str(payment['id'])
-    db.session.commit()
+        
+        # Chamada da API com segurança
+        payment_response = sdk.payment().create(payment_data)
+        payment = payment_response.get("response")
 
-    return render_template('pagamento.html', c=c, pix_codigo=pix_codigo, qrcode_base64=qrcode_base64)
+        if not payment or "point_of_interaction" not in payment:
+            return "Erro ao gerar PIX: Verifique sua conexão ou Token do Mercado Pago."
+
+        pix_codigo = payment['point_of_interaction']['transaction_data']['qr_code']
+        qrcode_base64 = payment['point_of_interaction']['transaction_data']['qr_code_base64']
+        
+        c.mp_id = str(payment['id'])
+        db.session.commit()
+
+        return render_template('pagamento.html', c=c, pix_codigo=pix_codigo, qrcode_base64=qrcode_base64)
+    
+    except Exception as e:
+        print(f"Erro MP: {e}")
+        return "Ocorreu um erro ao processar o pagamento. Tente novamente em instantes."
 
 @app.route('/ingresso/<int:id>')
 def ingresso(id):
     c = Cliente.query.get_or_404(id)
     
-    # CONSULTA ATIVA: Verifica o status no Mercado Pago antes de mostrar o ingresso
     if not c.pago and c.mp_id:
         try:
             payment_info = sdk.payment().get(c.mp_id)
-            if payment_info["response"].get("status") == "approved":
+            if payment_info.get("response", {}).get("status") == "approved":
                 c.pago = True
                 db.session.commit()
         except:
