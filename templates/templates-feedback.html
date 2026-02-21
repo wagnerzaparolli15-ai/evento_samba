@@ -2,28 +2,28 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    {% if tipo == 'aguardando' %}<meta http-equiv="refresh" content="15">{% endif %}
+    {% if tipo == 'aguardando' %}<meta http-equiv="refresh" content="10">{% endif %}
     <style>
-        body { background: #000 url('/static/fundo.jpg'); background-size: cover; color: white; font-family: sans-serif; text-align: center; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-        .box { background: rgba(0,0,0,0.9); padding: 40px; border-radius: 20px; border: 2px solid #f1c40f; }
-        .loader { border: 4px solid #333; border-top: 4px solid #f1c40f; border-radius: 50%; width: 40px; height: 40px; animation: spin 2s linear infinite; margin: 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        body { background: #000; color: white; font-family: sans-serif; text-align: center; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .box { padding: 40px; border-radius: 20px; border: 4px solid #f1c40f; max-width: 400px; }
+        .sucesso { border-color: #2ecc71; }
+        .erro { border-color: #e74c3c; }
+        .btn { display: inline-block; margin-top: 20px; padding: 10px 20px; background: #f1c40f; color: #000; text-decoration: none; font-weight: bold; border-radius: 5px; }
     </style>
 </head>
 <body>
-    <div class="box">
-        {% if tipo == 'erro' %}
-            <h1 style="color:#e74c3c">AVISO</h1>
+    <div class="box {{ tipo }}">
+        {% if tipo == 'aguardando' %}
+            <h1>PROCESSANDO...</h1>
+            <p>Estamos confirmando o seu Pix com o Mercado Pago. Não feche esta página.</p>
+        {% elif tipo == 'sucesso' %}
+            <h1 style="color:#2ecc71">LIBERADO!</h1>
             <p>{{ msg }}</p>
-            <a href="/" style="color:#f1c40f; text-decoration:none">VOLTAR</a>
-        {% elif tipo == 'aguardando' %}
-            <h1>VALIDANDO PAGAMENTO...</h1>
-            <div class="loader"></div>
-            <p>O sistema confere a cada 15s. Assim que aprovado, seu ingresso aparecerá aqui.</p>
-        {% elif tipo == 'checkin' %}
-            <h1 style="color: {{ '#2ecc71' if c.pago else '#e74c3c' }}">{{ '✅ LIBERADO' if c.pago else '❌ NÃO PAGO' }}</h1>
-            <h2>{{ c.nome }}</h2>
+        {% elif tipo == 'erro' %}
+            <h1 style="color:#e74c3c">BLOQUEADO</h1>
+            <p>{{ msg }}</p>
         {% endif %}
+        <a href="/" class="btn">VOLTAR AO INÍCIO</a>
     </div>
 </body>
 </html>
