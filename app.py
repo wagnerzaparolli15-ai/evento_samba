@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 
-# Configuração estável para o Render
+# Configuração estável para o Render com proteção de conexão
 uri = "postgresql://db_fazcomfe_user:bo24NlcJANvGehkj97PytDoNyoiT696V@dpg-d6b4mq4hncsc7386sfag-a/db_fazcomfe?sslmode=require"
 app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -12,7 +12,7 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True, "pool_recycle"
 
 db = SQLAlchemy(app)
 
-# TOKEN INSERIDO: Sua chave oficial de produção
+# TOKEN OFICIAL: Chave de produção do Mercado Pago
 sdk = mercadopago.SDK("APP_USR-3244228687878580-021915-5528b1d97c9055fab65127d73dc1427d-24221819")
 
 class Cliente(db.Model):
@@ -22,6 +22,16 @@ class Cliente(db.Model):
     pago = db.Column(db.Boolean, default=False)
     utilizado = db.Column(db.Boolean, default=False)
     mp_id = db.Column(db.String(100))
+
+# ROTA DE EMERGÊNCIA: Use uma única vez para sincronizar as colunas do banco
+@app.route('/reset-banco-sistema-cara')
+def reset_banco():
+    try:
+        db.drop_all()
+        db.create_all()
+        return "<h1>✅ BANCO DE DADOS SINCRONIZADO!</h1><p>A coluna mp_id foi criada. Volte para a Home e faça seu teste.</p>"
+    except Exception as e:
+        return f"<h1>❌ ERRO AO RESETAR:</h1><p>{str(e)}</p>"
 
 with app.app_context():
     db.create_all()
@@ -37,7 +47,7 @@ def reservar():
     if not nome or not tel:
         return "Erro: Nome e telefone são obrigatórios."
     try:
-        # Tenta cadastrar, se o telefone já existir ele vai para o pagamento direto
+        # Redireciona direto se o cliente já existir (evita erro de duplicidade)
         cliente_existente = Cliente.query.filter_by(telefone=tel).first()
         if cliente_existente:
             return redirect(url_for('pagamento', id=cliente_existente.id))
@@ -53,10 +63,8 @@ def reservar():
 @app.route('/pagamento/<int:id>')
 def pagamento(id):
     c = Cliente.query.get_or_404(id)
-    
     try:
         primeiro_nome = c.nome.split()[0] if c.nome else "Cliente"
-        
         payment_data = {
             "transaction_amount": 45.00,
             "description": f"Ingresso + Feijoada - {c.nome}",
@@ -67,7 +75,6 @@ def pagamento(id):
                 "last_name": "Samba"
             }
         }
-        
         payment_response = sdk.payment().create(payment_data)
         payment = payment_response.get("response")
 
@@ -79,16 +86,14 @@ def pagamento(id):
         
         c.mp_id = str(payment['id'])
         db.session.commit()
-
         return render_template('pagamento.html', c=c, pix_codigo=pix_codigo, qrcode_base64=qrcode_base64)
-    
     except Exception as e:
         return f"Erro de comunicação: {str(e)}"
 
 @app.route('/ingresso/<int:id>')
 def ingresso(id):
     c = Cliente.query.get_or_404(id)
-    
+    # Validação automática com a API do Mercado Pago
     if not c.pago and c.mp_id:
         try:
             payment_info = sdk.payment().get(c.mp_id)
@@ -97,7 +102,6 @@ def ingresso(id):
                 db.session.commit()
         except:
             pass
-
     if not c.pago:
         return render_template('templates-feedback.html', tipo='aguardando', id=c.id)
     
