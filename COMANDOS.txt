@@ -1,0 +1,27 @@
+https://evento-samba.onrender.com/admin/reset-total
+
+https://evento-samba.onrender.com/admin/bar/produtos
+
+Página de Venda (Início): Onde o cliente começa a reserva.
+👉 https://evento-samba.onrender.com/
+
+Link de Validação (O que o cliente clica): É o link que o cliente acessa após pagar para ver o ingresso ou entrar no bar.
+👉 https://evento-samba.onrender.com/ingresso/1
+(Nota: O número "1" no final muda para cada cliente: 1, 2, 3...)
+
+
+cd C:\Users\windows\Desktop\evento_samba
+
+
+Objetivo,Comando
+Ver se os arquivos estão lá,ls
+Subir mudanças para o ar,git add .
+"Criar uma ""etiqueta"" na mudança","git commit -m ""Explicação da mudança"""
+Enviar para o site (Render),git push origin master
+
+Comando,O que ele faz
+cd C:\Users\windows\Desktop\evento_samba,Entra direto na pasta do seu projeto.
+cd ..,Volta uma pasta para trás (sai de evento_samba e vai para o Desktop).
+ls,Lista todos os arquivos que estão dentro da pasta onde você está.
+pwd,Mostra o caminho completo de onde você está agora.
+mkdir nome_da_pasta,Cria uma pasta nova (caso você queira organizar fotos ou logs).
