@@ -31,3 +31,8 @@ mkdir nome_da_pasta,Cria uma pasta nova (caso você queira organizar fotos ou lo
 
  cd C:\Users\windows\Desktop\evento_samba
 
+Página,Link Exato
+Venda (Início),https://evento-samba.onrender.com/
+Gestão (Admin),https://evento-samba.onrender.com/admin/bar/produtos
+Reset (Limpeza),https://evento-samba.onrender.com/admin/reset-total
+

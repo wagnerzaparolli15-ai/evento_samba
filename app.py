@@ -5,14 +5,16 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# --- CONFIGURAÇÃO DO BANCO ---
+# --- BANCO DE DADOS (PostgreSQL Render) ---
 uri = "postgresql://db_fazcomfe_user:bo24NlcJANvGehkj97PytDoNyoiT696V@dpg-d6b4mq4hncsc7386sfag-a/db_fazcomfe?sslmode=require"
 app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+
+# --- MERCADO PAGO ---
 sdk = mercadopago.SDK("APP_USR-3244228687878580-021915-5528b1d97c9055fab65127d73dc1427d-24221819")
 
-# --- MODELOS DE DADOS ---
+# --- MODELOS ---
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100))
@@ -30,10 +32,12 @@ class Produto(db.Model):
     imagem_url = db.Column(db.String(500))
     ativo = db.Column(db.Boolean, default=True)
 
+# Cria as tabelas se não existirem
 with app.app_context():
     db.create_all()
 
 # --- ROTAS ---
+
 @app.route('/')
 def index():
     return render_template('index.html', preco=45.0)
@@ -72,7 +76,7 @@ def validar_ingresso(id):
 @app.route('/bar/<int:id>')
 def bar(id):
     c = Cliente.query.get_or_404(id)
-    produtos = Produto.query.filter_by(ativo=True).all() or []
+    produtos = Produto.query.filter_by(ativo=True).all()
     return render_template('bar.html', c=c, produtos=produtos)
 
 @app.route('/admin/bar/produtos', methods=['GET', 'POST'])
@@ -96,7 +100,7 @@ def admin_bar_produtos():
 def checkin(id):
     c = Cliente.query.get_or_404(id)
     c.utilizado = True
-    c.pago = True
+    c.pago = True # Simula pagamento para liberar o bar
     db.session.commit()
     return redirect(url_for('admin_bar_produtos'))
 
@@ -104,7 +108,7 @@ def checkin(id):
 def reset_total():
     db.drop_all()
     db.create_all()
-    return "<h1>Sistema Resetado com Sucesso!</h1>"
+    return "<h1>Sistema Resetado com Sucesso! Banco de dados limpo.</h1>"
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
