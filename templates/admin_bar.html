@@ -2,66 +2,46 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Painel Bafafá - Inventário</title>
+    <title>Admin - Faz com Fé</title>
     <style>
-        body { font-family: sans-serif; background: #1a1a1a; color: white; padding: 20px; }
-        .card { background: #2d2d2d; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #444; }
-        input, select { padding: 10px; margin: 5px; border-radius: 5px; border: none; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px; border-bottom: 1px solid #444; text-align: left; }
-        .btn { background: #28a745; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; }
-        .resumo { display: flex; gap: 20px; font-size: 1.2em; color: #ffc107; }
+        body { background: #1a1a1a; color: white; font-family: sans-serif; padding: 20px; }
+        .card { background: #2d2d2d; padding: 15px; margin-bottom: 20px; border-radius: 10px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; border-bottom: 1px solid #444; text-align: left; }
+        .btn { background: #28a745; color: white; padding: 8px; border: none; cursor: pointer; text-decoration: none; border-radius: 5px; }
     </style>
 </head>
 <body>
-
-    <h2>📊 Contabilidade em Tempo Real</h2>
-    <div class="card resumo">
-        <div>Total Vendas: <strong>R$ {{ "%.2f"|format(faturamento) }}</strong></div>
-        <div>Lucro Estimado: <strong>R$ {{ "%.2f"|format(lucro) }}</strong></div>
-    </div>
-
+    <h2>📊 Painel do Bafafá</h2>
+    
     <div class="card">
-        <h3>➕ Cadastrar Produto / Estoque</h3>
-        <form method="POST">
-            <input type="text" name="nome" placeholder="Nome (Ex: Brahma)" required>
-            <input type="number" step="0.01" name="preco_venda" placeholder="Preço Venda" required>
-            <input type="number" step="0.01" name="preco_custo" placeholder="Preço Custo" required>
-            <input type="number" name="estoque" placeholder="Qtd Inicial" required>
-            <input type="text" name="imagem_url" placeholder="URL da Foto">
-            <select name="categoria">
-                <option value="BEBIDAS">BEBIDAS</option>
-                <option value="COMIDA">COMIDA</option>
-            </select>
-            <button type="submit" class="btn">Salvar Produto</button>
-        </form>
-    </div>
-
-    <div class="card">
-        <h3>📦 Inventário Atual</h3>
+        <h3>👥 Check-in de Convidados</h3>
         <table>
-            <thead>
-                <tr>
-                    <th>Produto</th>
-                    <th>Custo</th>
-                    <th>Venda</th>
-                    <th>Estoque</th>
-                    <th>Lucro p/ Un</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for p in produtos %}
-                <tr>
-                    <td>{{ p.nome }}</td>
-                    <td>R$ {{ "%.2f"|format(p.preco_custo) }}</td>
-                    <td>R$ {{ "%.2f"|format(p.preco_venda) }}</td>
-                    <td style="color: {{ 'red' if p.estoque < 10 else 'lime' }}">{{ p.estoque }} un</td>
-                    <td>R$ {{ "%.2f"|format(p.preco_venda - p.preco_custo) }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
+            <tr><th>Nome</th><th>Status</th><th>Ação</th></tr>
+            {% for c in clientes %}
+            <tr>
+                <td>{{ c.nome }}</td>
+                <td>{{ "No Bar" if c.utilizado else "Aguardando" }}</td>
+                <td>
+                    {% if not c.utilizado %}
+                    <a href="{{ url_for('checkin', id=c.id) }}" class="btn">Dar Baixa / Liberar Bar</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
         </table>
     </div>
 
+    <div class="card">
+        <h3>➕ Adicionar Produto ao Bar</h3>
+        <form method="POST">
+            <input type="text" name="nome" placeholder="Nome" required>
+            <input type="number" step="0.01" name="preco_venda" placeholder="Preço Venda" required>
+            <input type="number" step="0.01" name="preco_custo" placeholder="Preço Custo" required>
+            <input type="number" name="estoque" placeholder="Estoque" required>
+            <select name="categoria"><option value="BEBIDAS">BEBIDAS</option><option value="COMIDA">COMIDA</option></select>
+            <button type="submit" class="btn">Salvar</button>
+        </form>
+    </div>
 </body>
 </html>
