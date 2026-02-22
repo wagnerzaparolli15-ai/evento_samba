@@ -25,3 +25,9 @@ cd ..,Volta uma pasta para trás (sai de evento_samba e vai para o Desktop).
 ls,Lista todos os arquivos que estão dentro da pasta onde você está.
 pwd,Mostra o caminho completo de onde você está agora.
 mkdir nome_da_pasta,Cria uma pasta nova (caso você queira organizar fotos ou logs).
+
+
+
+
+ cd C:\Users\windows\Desktop\evento_samba
+
