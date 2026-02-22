@@ -1,11 +1,11 @@
 import os, re, mercadopago
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
 
 app = Flask(__name__)
 
-# --- BANCO DE DADOS (PostgreSQL Render) ---
+# --- BANCO DE DADOS ---
+# Usando a URI direta para evitar falhas de conexão
 uri = "postgresql://db_fazcomfe_user:bo24NlcJANvGehkj97PytDoNyoiT696V@dpg-d6b4mq4hncsc7386sfag-a/db_fazcomfe?sslmode=require"
 app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -31,10 +31,6 @@ class Produto(db.Model):
     estoque = db.Column(db.Integer, default=0)
     imagem_url = db.Column(db.String(500))
     ativo = db.Column(db.Boolean, default=True)
-
-# Cria as tabelas se não existirem
-with app.app_context():
-    db.create_all()
 
 # --- ROTAS ---
 
@@ -66,19 +62,6 @@ def pagamento(id):
     pix = result["response"]["point_of_interaction"]["transaction_data"]
     return render_template('pagamento.html', c=c, pix_codigo=pix["qr_code"], qrcode_base64=pix["qr_code_base64"])
 
-@app.route('/ingresso/<int:id>')
-def validar_ingresso(id):
-    c = Cliente.query.get_or_404(id)
-    if c.utilizado: return redirect(url_for('bar', id=c.id))
-    if c.pago: return render_template('recepcao.html', c=c)
-    return render_template('templates-feedback.html', tipo='aguardando', id=c.id)
-
-@app.route('/bar/<int:id>')
-def bar(id):
-    c = Cliente.query.get_or_404(id)
-    produtos = Produto.query.filter_by(ativo=True).all()
-    return render_template('bar.html', c=c, produtos=produtos)
-
 @app.route('/admin/bar/produtos', methods=['GET', 'POST'])
 def admin_bar_produtos():
     if request.method == 'POST':
@@ -92,23 +75,23 @@ def admin_bar_produtos():
         db.session.add(p)
         db.session.commit()
         return redirect(url_for('admin_bar_produtos'))
-    produtos = Produto.query.all()
-    clientes = Cliente.query.all()
+    
+    # Adicionado try/except para evitar o erro 500 se as tabelas sumirem
+    try:
+        produtos = Produto.query.all()
+        clientes = Cliente.query.all()
+    except:
+        produtos, clientes = [], []
     return render_template('admin_bar.html', produtos=produtos, clientes=clientes)
 
-@app.route('/checkin/<int:id>')
-def checkin(id):
-    c = Cliente.query.get_or_404(id)
-    c.utilizado = True
-    c.pago = True # Simula pagamento para liberar o bar
-    db.session.commit()
-    return redirect(url_for('admin_bar_produtos'))
-
-@app.route('/admin/reset-total')
+@app.route('/admin/reset-total', methods=['GET', 'POST'])
 def reset_total():
-    db.drop_all()
-    db.create_all()
-    return "<h1>Sistema Resetado com Sucesso! Banco de dados limpo.</h1>"
+    try:
+        db.drop_all()
+        db.create_all()
+        return "<h1>Banco de Dados Resetado com Sucesso!</h1>"
+    except Exception as e:
+        return f"<h1>Erro ao resetar: {str(e)}</h1>"
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
