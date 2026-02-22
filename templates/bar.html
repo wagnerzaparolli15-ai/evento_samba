@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bar - Feijoada, Samba & Bafafá</title>
+    <style>
+        body { background: #000; color: #fff; font-family: sans-serif; display: flex; margin: 0; height: 100vh; overflow: hidden; }
+        .catalogo { flex: 2; padding: 20px; overflow-y: auto; border-right: 2px solid #333; }
+        .checkout { flex: 1; background: #111; padding: 20px; display: flex; flex-direction: column; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; }
+        .card { background: #1a1a1a; padding: 10px; border-radius: 10px; text-align: center; border: 1px solid #333; }
+        .card img { width: 100%; height: 90px; object-fit: cover; border-radius: 5px; }
+        .btn-add { background: #f1c40f; border: none; width: 100%; padding: 8px; font-weight: bold; border-radius: 5px; cursor: pointer; margin-top: 5px; }
+        .total-box { background: #000; border: 2px solid #f1c40f; padding: 15px; border-radius: 10px; text-align: center; margin-top: auto; }
+        #modal-pix { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:1000; text-align:center; padding-top:10%; }
+    </style>
+</head>
+<body>
+    <div id="modal-pix">
+        <h2 style="color:#f1c40f">PAGAMENTO DO PEDIDO</h2>
+        <img id="img-qr" style="width:200px; background:#fff; padding:10px; border-radius:10px;">
+        <p>Após pagar, aguarde o atendente chamar pelo seu nome.</p>
+        <button onclick="location.reload()" class="btn-add" style="width:200px">FECHAR</button>
+    </div>
+
+    <div class="catalogo">
+        <h2 style="color:#f1c40f">CARDÁPIO 🍺</h2>
+        <div class="grid">
+            {% for p in produtos %}
+            <div class="card">
+                <img src="{{ p.imagem_url }}" alt="{{ p.nome }}">
+                <p style="font-size: 13px; margin: 5px 0;">{{ p.nome }}</p>
+                <b style="color:#f1c40f">R$ {{ "%.2f"|format(p.preco) }}</b>
+                <button class="btn-add" onclick="add('{{ p.nome }}', {{ p.preco }})">ADICIONAR</button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="checkout">
+        <h3>Seu Pedido</h3>
+        <p>Cliente: <strong>{{ c.nome }}</strong></p>
+        <div id="carrinho" style="flex-grow:1; border:1px dashed #444; padding:10px; border-radius:10px; overflow-y:auto; font-size:14px;"></div>
+        <div class="total-box">
+            <div id="val-total" style="font-size: 32px; color: #f1c40f; font-weight: bold;">R$ 0,00</div>
+            <button class="btn-add" onclick="finalizar()" style="padding:15px; font-size:18px; margin-top:10px;">GERAR PIX AGORA</button>
+        </div>
+    </div>
+
+    <script>
+        let total = 0; let itens = [];
+        function add(n, p) { total += p; itens.push(n); document.getElementById('val-total').innerText = `R$ ${total.toFixed(2)}`; const el = document.createElement('div'); el.innerText = `${n} - R$ ${p.toFixed(2)}`; document.getElementById('carrinho').appendChild(el); }
+        async function finalizar() {
+            if(total === 0) return;
+            const res = await fetch('/bar/gerar_pix', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({cliente_id: {{c.id}}, cliente_nome: '{{c.nome}}', total: total, itens: itens.join(', ')})
+            });
+            const data = await res.json();
+            document.getElementById('img-qr').src = `data:image/jpeg;base64,${data.pix_img}`;
+            document.getElementById('modal-pix').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

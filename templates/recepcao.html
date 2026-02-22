@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recepção - Pagode do Cara</title>
+    <style>
+        body { background: #000 url('/static/fundo.jpg') no-repeat center center fixed; background-size: cover; color: white; font-family: sans-serif; text-align: center; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .container { background: rgba(0,0,0,0.9); padding: 30px; border-radius: 20px; border: 2px solid #f1c40f; max-width: 400px; width: 90%; }
+        .btn { display: block; padding: 20px; margin: 15px 0; border-radius: 12px; font-weight: bold; text-decoration: none; font-size: 18px; }
+        .btn-bar { background: #2ecc71; color: white; border: 2px solid #fff; }
+        .btn-ingresso { background: #f1c40f; color: #000; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="color: #f1c40f;">BEM-VINDO!</h1>
+        <p>Olá, <strong>{{ c.nome }}</strong>! O que deseja fazer?</p>
+        <a href="/bar/{{ c.id }}" class="btn btn-bar">🍺 IR PARA O BAR (PEDIR AGORA)</a>
+        <a href="/obrigado/{{ c.id }}" class="btn btn-ingresso">🎫 VER MEU INGRESSO</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestão PDV - Feijoada, Samba & Bafafá</title>
+    <style>
+        body { background: #0a0a0a; color: white; font-family: sans-serif; padding: 20px; }
+        .box { background: #1a1a1a; padding: 20px; border-radius: 10px; border: 1px solid #f1c40f; margin-bottom: 20px; }
+        input, select { width: 100%; padding: 12px; margin: 5px 0; background: #000; border: 1px solid #333; color: #fff; box-sizing: border-box; }
+        .btn-acao { background: #f1c40f; color: black; border: none; padding: 10px; font-weight: bold; cursor: pointer; width: 100%; border-radius: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #111; }
+        th, td { padding: 12px; border-bottom: 1px solid #333; text-align: left; }
+        th { color: #f1c40f; }
+        .img-preview { width: 40px; height: 40px; object-fit: cover; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>GESTÃO DO BAR 🛠️</h1>
+    
+    <div class="box">
+        <h3>Cadastrar / Editar Produto</h3>
+        <form method="POST">
+            <input type="hidden" name="id" id="p_id">
+            <input type="text" name="nome" id="p_nome" placeholder="Nome da Bebida (ex: Heineken Long Neck)" required>
+            <input type="number" step="0.01" name="preco" id="p_preco" placeholder="Preço (ex: 12.00)" required>
+            <input type="text" name="imagem_url" id="p_img" placeholder="Link da Logo/Imagem">
+            <select name="categoria" id="p_cat">
+                <option value="BEBIDAS">BEBIDAS</option>
+                <option value="COMIDA">COMIDA</option>
+                <option value="LANCHES">LANCHES</option>
+            </select>
+            <button type="submit" class="btn-acao">SALVAR NO CARDÁPIO</button>
+        </form>
+    </div>
+
+    <h3>Pedidos Pendentes de Entrega</h3>
+    <table>
+        <tr><th>ID</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Ação</th></tr>
+        {% for ped in pedidos if not ped.entregue %}
+        <tr>
+            <td>#{{ ped.id }}</td>
+            <td>{{ ped.comprador.nome }}</td>
+            <td>{{ ped.itens_resumo }}</td>
+            <td style="color:#f1c40f">R$ {{ "%.2f"|format(ped.valor_total) }}</td>
+            <td>
+                <form action="/admin/baixa/{{ ped.id }}" method="POST">
+                    <button class="btn-acao" style="background:#2ecc71">DAR BAIXA (ENTREGAR)</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
