@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Administração do Evento</title>
+    <title>Gestão Bafafá</title>
     <style>
         body { background: #121212; color: white; font-family: sans-serif; padding: 20px; }
         .card { background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #f1c40f; margin-bottom: 30px; }
@@ -15,12 +15,12 @@
     </style>
 </head>
 <body>
-    <h1>📊 Gestão Completa - Bafafá</h1>
+    <h1>📊 Administração Central do Evento</h1>
 
     <div class="card">
-        <h3>🚪 Portaria & Check-in (Convidados)</h3>
+        <h3>🚪 Portaria & Check-in</h3>
         <table>
-            <tr><th>Nome</th><th>Status</th><th>Ação</th></tr>
+            <tr><th>Convidado</th><th>Status</th><th>Ação</th></tr>
             {% for c in clientes %}
             <tr>
                 <td>{{ c.nome }}</td>
@@ -36,23 +36,18 @@
     </div>
 
     <div class="card">
-        <h3>🍺 Gestão de Estoque do Bar</h3>
+        <h3>🍺 Gestão do Bar</h3>
         <form method="POST">
-            <input type="text" name="nome" placeholder="Nome do Produto" required>
-            <input type="number" step="0.01" name="preco_venda" placeholder="Preço de Venda R$" required>
-            <input type="number" step="0.01" name="preco_custo" placeholder="Preço de Custo R$" required>
-            <input type="number" name="estoque" placeholder="Qtd Inicial" required>
-            <button type="submit" class="btn btn-green">CADASTRAR PRODUTO</button>
+            <input type="text" name="nome" placeholder="Produto" required>
+            <input type="number" step="0.01" name="preco_venda" placeholder="Venda R$" required>
+            <input type="number" step="0.01" name="preco_custo" placeholder="Custo R$" required>
+            <input type="number" name="estoque" placeholder="Qtd" required>
+            <button type="submit" class="btn btn-green">CADASTRAR</button>
         </form>
-        
         <table>
-            <tr><th>Produto</th><th>Estoque</th><th>Venda</th></tr>
+            <tr><th>Produto</th><th>Estoque</th><th>Preço</th></tr>
             {% for p in produtos %}
-            <tr>
-                <td>{{ p.nome }}</td>
-                <td>{{ p.estoque }} un</td>
-                <td>R$ {{ "%.2f"|format(p.preco) }}</td>
-            </tr>
+            <tr><td>{{ p.nome }}</td><td>{{ p.estoque }} un</td><td>R$ {{ "%.2f"|format(p.preco) }}</td></tr>
             {% endfor %}
         </table>
     </div>
