@@ -47,7 +47,7 @@ def login_staff_required(f):
         return f(*args, **kwargs)
     return decorated
 
-# --- FLUXO DO CLIENTE (DO INÍCIO AO FIM) ---
+# --- FLUXO DO CLIENTE ---
 
 @app.route('/')
 def index(): 
@@ -65,34 +65,50 @@ def reservar():
 @app.route('/pagamento/<int:id>')
 def pagamento(id):
     c = Cliente.query.get_or_404(id)
-    # Gerando PIX Mercado Pago
-    pay_data = {
-        "transaction_amount": 45.0,
-        "description": f"Bafafá - {c.nome}",
-        "payment_method_id": "pix",
-        "payer": {"email": "wagnerzaparolli15@gmail.com"}
-    }
-    result = sdk.payment().create(pay_data)
-    pix = result["response"]["point_of_interaction"]["transaction_data"]
-    c.payment_id = str(result["response"]["id"])
-    db.session.commit()
-    return render_template('pagamento.html', c=c, pix_codigo=pix["qr_code"], qrcode_base64=pix["qr_code_base64"])
+    try:
+        pay_data = {
+            "transaction_amount": 45.0,
+            "description": f"Bafafá - {c.nome}",
+            "payment_method_id": "pix",
+            "payer": {"email": "wagnerzaparolli15@gmail.com"}
+        }
+        result = sdk.payment().create(pay_data)
+        
+        # Proteção contra erro 500 se a API falhar
+        if result["status"] == 201:
+            pix = result["response"]["point_of_interaction"]["transaction_data"]
+            c.payment_id = str(result["response"]["id"])
+            db.session.commit()
+            return render_template('pagamento.html', c=c, pix_codigo=pix["qr_code"], qrcode_base64=pix["qr_code_base64"])
+        else:
+            return f"Erro no Mercado Pago: {result['status']}. Tente novamente."
+    except Exception as e:
+        return f"Erro de Conexão: {str(e)}"
 
 @app.route('/ingresso/<int:id>')
 def ingresso(id):
     c = Cliente.query.get_or_404(id)
-    # Se ainda não pagou, manda para a página de espera (feedback)
     if not c.pago:
-        # Verifica no Mercado Pago
-        status = sdk.payment().get(c.payment_id)["response"]["status"]
-        if status == "approved":
-            c.pago = True
-            db.session.commit()
-        else:
+        try:
+            status_res = sdk.payment().get(c.payment_id)
+            if status_res["response"]["status"] == "approved":
+                c.pago = True
+                db.session.commit()
+            else:
+                return render_template('templates-feedback.html', id=id)
+        except:
             return render_template('templates-feedback.html', id=id)
             
     checkin_url = f"https://evento-samba.onrender.com/validar-entrada/{c.id}"
     return render_template('obrigado.html', c=c, checkin_url=checkin_url)
+
+@app.route('/bar/<int:id>')
+def bar(id):
+    c = Cliente.query.get_or_404(id)
+    if not c.na_casa:
+        return "<h1>Acesso Negado</h1><p>Você precisa passar pela portaria primeiro.</p>"
+    prods = Produto.query.filter(Produto.estoque > 0).all()
+    return render_template('bar.html', c=c, produtos=prods)
 
 # --- FLUXO DE GESTÃO ---
 
@@ -102,7 +118,8 @@ def login_staff():
         f = Equipe.query.filter_by(usuario=request.form.get('u'), senha=request.form.get('s')).first()
         if f:
             session.update({'staff_id': f.id, 'cargo': f.cargo, 'nome': f.nome})
-            return redirect(url_for('admin_total' if f.cargo == 'admin' else 'portaria'))
+            if f.cargo == 'admin': return redirect(url_for('admin_total'))
+            return redirect(url_for('portaria'))
     return render_template('login_staff.html')
 
 @app.route('/admin_total', methods=['GET', 'POST'])
@@ -112,9 +129,9 @@ def admin_total():
     if request.method == 'POST':
         if 'id_prod' in request.form:
             p = Produto.query.get(request.form.get('id_prod'))
-            p.preco_custo = float(request.form.get('custo'))
-            p.preco_venda = float(request.form.get('venda'))
-            p.estoque = int(request.form.get('estoque'))
+            p.preco_custo = float(request.form.get('custo') or 0)
+            p.preco_venda = float(request.form.get('venda') or 0)
+            p.estoque = int(request.form.get('estoque') or 0)
         db.session.commit()
     
     prods = Produto.query.all()
@@ -133,12 +150,12 @@ def validar_entrada(id):
     c = Cliente.query.get_or_404(id)
     c.na_casa = True
     db.session.commit()
-    return redirect(url_for('portaria'))
+    # Após validar, leva para a página de recepção que tem o botão do bar
+    return render_template('recepcao.html', c=c)
 
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-        # Cria admin padrão se não existir
         if not Equipe.query.filter_by(usuario='wagner').first():
             db.session.add(Equipe(nome='Wagner', usuario='wagner', senha='123', cargo='admin'))
             db.session.commit()
