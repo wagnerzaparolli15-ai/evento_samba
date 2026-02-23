@@ -6,7 +6,7 @@ from functools import wraps
 from datetime import datetime
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
-app.secret_key = "segredo_bafafa_2026_operacao_total"
+app.secret_key = "segredo_bafafa_2026_oficial_pro"
 
 # --- BANCO DE DADOS ---
 uri = "postgresql://db_fazcomfe_user:bo24NlcJANvGehkj97PytDoNyoiT696V@dpg-d6b4mq4hncsc7386sfag-a/db_fazcomfe?sslmode=require"
@@ -17,7 +17,7 @@ db = SQLAlchemy(app)
 # --- MERCADO PAGO ---
 sdk = mercadopago.SDK("APP_USR-3244228687878580-021915-5528b1d97c9055fab65127d73dc1427d-24221819")
 
-# --- MODELOS ---
+# --- MODELOS (TABELAS) ---
 class Usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
@@ -38,16 +38,39 @@ class Produto(db.Model):
     __tablename__ = 'bar_produtos'
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
-    preco = db.Column(db.Float, nullable=False)
-    estoque = db.Column(db.Integer, default=0)
+    preco_custo = db.Column(db.Float, default=0.0)
+    preco_venda = db.Column(db.Float, default=0.0)
+    estoque_inicial = db.Column(db.Integer, default=0)
+    vendido = db.Column(db.Integer, default=0)
+    imagem_local = db.Column(db.String(100)) # Pasta static/produtos/
 
+# --- INICIALIZAÇÃO E CARGA DA PLANILHA ---
 with app.app_context():
     db.create_all()
+    
+    # 1. Cadastro Automático da Planilha de Bebidas
+    if not Produto.query.first():
+        bebidas_oficiais = [
+            Produto(nome='Antarctica Lata (fardo 18)', imagem_local='antarctica.jpg'),
+            Produto(nome='Brahma Lata (fardo 18)', imagem_local='brahma.jpg'),
+            Produto(nome='Heineken 350ml (fardo 12)', imagem_local='heineken.jpg'),
+            Produto(nome='Amstel 473ml (fardo 12)', imagem_local='amstel.jpg'),
+            Produto(nome='Spaten 350ml (fardo 12)', imagem_local='spaten.jpg'),
+            Produto(nome='Coca-Cola Lata (fardo 12)', imagem_local='coca.jpg'),
+            Produto(nome='Guaraná Ant. (fardo 12)', imagem_local='guarana.jpg'),
+            Produto(nome='Red Bull (fardo 24)', imagem_local='redbull.jpg'),
+            Produto(nome='Red Label (Unidade)', imagem_local='redlabel.jpg'),
+            Produto(nome='Black Label (Unidade)', imagem_local='blacklabel.jpg')
+        ]
+        db.session.add_all(bebidas_oficiais)
+        
+    # 2. Cadastro do Wagner (Admin)
     if not Usuario.query.filter_by(username='wagner').first():
         db.session.add(Usuario(username='wagner', senha='123', cargo='admin'))
-        db.session.commit()
+    
+    db.session.commit()
 
-# --- SEGURANÇA ---
+# --- DECORADOR DE SEGURANÇA ---
 def login_obrigatorio(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -56,11 +79,15 @@ def login_obrigatorio(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- ROTAS DE LOGIN E DIRECIONAMENTO ---
+# --- ROTAS DE EQUIPE (LOGIN E DIRECIONAMENTO) ---
+
 @app.route('/login-staff', methods=['GET', 'POST'])
 def login_staff():
     if request.method == 'POST':
-        user = Usuario.query.filter_by(username=request.form.get('username'), senha=request.form.get('senha')).first()
+        user = Usuario.query.filter_by(
+            username=request.form.get('username'), 
+            senha=request.form.get('senha')
+        ).first()
         if user:
             session.update({'usuario_id': user.id, 'usuario_nome': user.username, 'usuario_cargo': user.cargo})
             if user.cargo == 'admin': return redirect(url_for('admin_evento'))
@@ -74,7 +101,7 @@ def logout():
     session.clear()
     return redirect(url_for('login_staff'))
 
-# --- PAINÉIS ESPECÍFICOS ---
+# --- PAINÉIS OPERACIONAIS ---
 
 @app.route('/painel-portaria')
 @login_obrigatorio
@@ -87,48 +114,73 @@ def painel_portaria():
 @login_obrigatorio
 def painel_barman():
     if session['usuario_cargo'] not in ['bar', 'admin']: return redirect(url_for('login_staff'))
-    return "<h1>Scanner do Barman</h1><p>Pronto para validar pedidos!</p>"
+    produtos = Produto.query.all()
+    return render_template('gestao_bar.html', produtos=produtos)
 
 @app.route('/valida-portaria/<int:id>')
 @login_obrigatorio
 def valida_portaria(id):
     c = Cliente.query.get_or_404(id)
-    if c.utilizado: return f"<h1>ERRO: JÁ ENTROU!</h1><p>Por {c.quem_liberou}</p>"
+    if c.utilizado:
+        return f"<h1>ERRO: JÁ ENTROU!</h1><p>Liberado por {c.quem_liberou} em {c.data_entrada.strftime('%H:%M')}</p>"
     c.utilizado, c.pago, c.quem_liberou, c.data_entrada = True, True, session['usuario_nome'], datetime.now()
     db.session.commit()
     return render_template('recepcao.html', c=c)
 
-# --- ADMINISTRAÇÃO (O SEU CONTROLE) ---
+# --- ADMINISTRAÇÃO FINANCEIRA (SEU CONTROLE) ---
+
 @app.route('/admin/evento', methods=['GET', 'POST'])
 @login_obrigatorio
 def admin_evento():
     if session['usuario_cargo'] != 'admin': return "Acesso Restrito"
+    
     if request.method == 'POST':
-        if 'new_user' in request.form:
+        if 'id_prod' in request.form: # Editar Planilha (Custo/Venda/Estoque)
+            p = Produto.query.get(request.form.get('id_prod'))
+            p.preco_custo = float(request.form.get('custo'))
+            p.preco_venda = float(request.form.get('venda'))
+            p.estoque_inicial = int(request.form.get('estoque'))
+        elif 'new_user' in request.form: # Cadastrar novo Staff
             db.session.add(Usuario(username=request.form.get('username'), senha=request.form.get('senha'), cargo=request.form.get('cargo')))
-        elif 'nome_prod' in request.form:
-            db.session.add(Produto(nome=request.form.get('nome_prod'), preco=float(request.form.get('preco')), estoque=int(request.form.get('estoque'))))
         db.session.commit()
         return redirect(url_for('admin_evento'))
-    return render_template('admin_bar.html', clientes=Cliente.query.all(), produtos=Produto.query.all(), staff=Usuario.query.all())
 
-# --- ROTAS PÚBLICAS (CLIENTE) ---
+    produtos = Produto.query.all()
+    custo_geral = sum([p.preco_custo * p.estoque_inicial for p in produtos])
+    lucro_previsto = sum([(p.preco_venda - p.preco_custo) * p.estoque_inicial for p in produtos])
+    
+    return render_template('admin_bar.html', produtos=produtos, custo_total=custo_geral, lucro=lucro_previsto, clientes=Cliente.query.all(), staff=Usuario.query.all())
+
+# --- FLUXO DO CLIENTE (MANTIDO) ---
+
 @app.route('/')
-def index(): return render_template('index.html', preco=45.0)
+def index():
+    return render_template('index.html', preco=45.0)
 
 @app.route('/reservar', methods=['POST'])
 def reservar():
-    c = Cliente(nome=request.form.get('nome').upper(), telefone=re.sub(r"\D", "", request.form.get('telefone')))
-    db.session.add(c); db.session.commit()
+    nome = request.form.get('nome', '').upper().strip()
+    tel = re.sub(r"\D", "", request.form.get('telefone', ''))
+    c = Cliente.query.filter_by(telefone=tel).first()
+    if not c:
+        c = Cliente(nome=nome, telefone=tel)
+        db.session.add(c)
+        db.session.commit()
     return redirect(url_for('pagamento', id=c.id))
 
 @app.route('/pagamento/<int:id>')
 def pagamento(id):
     c = Cliente.query.get_or_404(id)
-    pay_data = {"transaction_amount": 45.0, "description": f"Bafafá - {c.nome}", "payment_method_id": "pix", "payer": {"email": "wagnerzaparolli15@gmail.com"}}
+    pay_data = {
+        "transaction_amount": 45.0,
+        "description": f"Bafafá - {c.nome}",
+        "payment_method_id": "pix",
+        "payer": {"email": "wagnerzaparolli15@gmail.com"}
+    }
     result = sdk.payment().create(pay_data)
     pix = result["response"]["point_of_interaction"]["transaction_data"]
-    c.payment_id = str(result["response"]["id"]); db.session.commit()
+    c.payment_id = str(result["response"]["id"])
+    db.session.commit()
     return render_template('pagamento.html', c=c, pix_codigo=pix["qr_code"], qrcode_base64=pix["qr_code_base64"])
 
 @app.route('/ingresso/<int:id>')
@@ -138,4 +190,5 @@ def validar_ingresso(id):
     return render_template('obrigado.html', c=c, checkin_url=url)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)

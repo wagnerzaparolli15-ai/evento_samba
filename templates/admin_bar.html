@@ -1,53 +1,33 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Painel Bafafá</title>
-    <style>
-        body { background: #121212; color: white; font-family: sans-serif; padding: 20px; }
-        .bloco { background: #1e1e1e; padding: 20px; border-radius: 10px; border: 1px solid #f1c40f; margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px; border-bottom: 1px solid #333; text-align: left; }
-        th { color: #f1c40f; }
-        .btn { background: #f1c40f; padding: 10px 15px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
-    </style>
-</head>
-<body>
-    <div style="display: flex; justify-content: space-between;">
-        <h1>EQUIPE BAF AFÁ 🎷</h1>
-        <a href="/logout" style="color: red; text-decoration: none;">SAIR</a>
+<body style="background:#121212; color:white; font-family:sans-serif; padding:10px;">
+    <h2>FINANCEIRO E ESTOQUE BAF AFÁ 🎷</h2>
+    
+    <div style="background:#1e1e1e; padding:15px; border-radius:10px; margin-bottom:20px; border:1px solid #f1c40f;">
+        <h3 style="color:#f1c40f;">Resumo Geral</h3>
+        <p>CUSTO TOTAL: <b>R$ {{ "%.2f"|format(custo_total) }}</b></p>
+        <p>LUCRO PREVISTO: <b style="color:#2ecc71;">R$ {{ "%.2f"|format(lucro) }}</b></p>
     </div>
 
-    <div class="bloco">
-        <h3>+ Cadastrar Staff (Cozinha, Portaria, Bar, Limpeza)</h3>
-        <form method="POST">
-            <input type="hidden" name="new_user" value="1">
-            <input type="text" name="username" placeholder="Nome do Funcionário" required style="padding: 10px;">
-            <input type="password" name="senha" placeholder="Senha" required style="padding: 10px;">
-            <select name="cargo" style="padding: 10px;">
-                <option value="promoter">Promoter</option>
-                <option value="portaria">Portaria / Segurança</option>
-                <option value="bar">Barman</option>
-                <option value="cozinha">Cozinha</option>
-                <option value="ajudante">Ajudante</option>
-                <option value="limpeza">Equipe Limpeza</option>
-            </select>
-            <button type="submit" class="btn">SALVAR</button>
-        </form>
-    </div>
-
-    <div class="bloco">
-        <h3>🎟️ Controle de Ingressos</h3>
-        <table>
-            <tr><th>NOME</th><th>STATUS</th><th>VALIDADO POR</th></tr>
-            {% for c in clientes %}
-            <tr>
-                <td>{{ c.nome }}</td>
-                <td>{{ "✅ PAGO" if c.pago else "⏳ PENDENTE" }}</td>
-                <td>{{ c.quem_liberou if c.utilizado else "---" }}</td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
+    <table style="width:100%; border-collapse: collapse; font-size: 12px;">
+        <tr style="color:#f1c40f;">
+            <th>PRODUTO</th>
+            <th>CUSTO (R$)</th>
+            <th>VENDA (R$)</th>
+            <th>ESTOQUE</th>
+            <th>AÇÃO</th>
+        </tr>
+        {% for p in produtos %}
+        <tr style="border-bottom:1px solid #333;">
+            <form method="POST">
+                <td>{{ p.nome }}</td>
+                <td><input type="number" step="0.01" name="custo" value="{{ p.preco_custo }}" style="width:60px; background:#222; color:white;"></td>
+                <td><input type="number" step="0.01" name="venda" value="{{ p.preco_venda }}" style="width:60px; background:#222; color:white;"></td>
+                <td><input type="number" name="estoque" value="{{ p.estoque_inicial }}" style="width:50px; background:#222; color:white;"></td>
+                <td>
+                    <input type="hidden" name="id_prod" value="{{ p.id }}">
+                    <button type="submit" style="background:#f1c40f; border:none; padding:5px; border-radius:3px; cursor:pointer;">💾</button>
+                </td>
+            </form>
+        </tr>
+        {% endfor %}
+    </table>
 </body>
-</html>
