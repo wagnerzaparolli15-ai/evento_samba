@@ -1,36 +1,27 @@
-# 🥁 Pagode do Cara - Sistema de Ingressos Automático
+# Sistema de Gestão Bafafá 🎷
 
-Este é o sistema oficial do **Pagode do Cara**, projetado para rodar de forma independente no Render, gerindo vendas de ingressos via PIX com confirmação automática através do Mercado Pago.
+Sistema completo para venda de ingressos via Pix e controle de bar.
 
-## 🚀 Como Funciona a Magia (A Pena)
-O sistema utiliza uma lógica de identificação por centavos:
-1. O cliente faz a reserva (R$ 45,00).
-2. O sistema gera um valor único usando o ID do cliente nos centavos (Ex: Cliente #15 paga **R$ 45,15**).
-3. A "Pena" (script de monitorização) varre o seu Mercado Pago a cada 30 segundos.
-4. Quando encontra um pagamento de R$ 45,15, ela sabe que é do Cliente #15 e liberta o ingresso automaticamente.
+## 🚀 Funcionalidades Principal
+
+- Venda de ingressos com integração Mercado Pago.
+- Check-in automático via QR Code na portaria.
+- Cardápio digital para pedidos no celular do cliente.
 
 ## 🛠️ Tecnologias Utilizadas
-- **Backend:** Flask (Python)
-- **Banco de Dados:** PostgreSQL (Render)
-- **Servidor Web:** Gunicorn
-- **Integração:** API do Mercado Pago
 
-## 📦 Estrutura de Ficheiros
-- `app.py`: O cérebro do sistema e a automação.
-- `static/`: Onde devem estar a sua `logo.png` e `fundo.jpg`.
-- `templates/`: As páginas visuais (`index`, `pagamento`, `obrigado`, `admin`).
+- Python / Flask
+- SQLAlchemy (Banco de Dados PostgreSQL)
+- Mercado Pago SDK
 
-## ⚙️ Configuração no Render (Settings)
-Para o sistema funcionar sem erros de SSL ou de porta, use estas configurações no painel do Render:
-- **Build Command:** `pip install -r requirements.txt`
-- **Start Command:** `gunicorn app:app --workers 1 --threads 1 --bind 0.0.0.0:10000`
-- **Environment Variables:**
-  - `PORT`: 10000
-  - `PYTHON_VERSION`: 3.14 (ou a versão que estiver a usar)
+## 📋 Como Executar o Projeto
 
-## 📊 Painel de Administração
-Pode conferir a lista de quem já pagou em:
-`https://evento-samba.onrender.com/admin_cara`
+1. Instale as dependências: `pip install -r requirements.txt`
+2. Configure as chaves do Mercado Pago no `app.py`.
+3. Execute a aplicação: `python app.py`
 
----
-*Faz com Fé Produções - 2026*
+## 👥 Equipe e Gestão
+
+O sistema permite o cadastro de diferentes níveis de acesso como Segurança, Barman e Administrador.
+
+Desenvolvido para o Pagode do Cara.
