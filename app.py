@@ -6,7 +6,7 @@ from functools import wraps
 from datetime import datetime
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
-app.secret_key = "segredo_bafafa_2026_AUDITORIA_FINANCEIRA"
+app.secret_key = "segredo_bafafa_2026_AUDITORIA_FIX"
 
 # --- BANCO DE DADOS ---
 uri = "postgresql://db_fazcomfe_user:bo24NlcJANvGehkj97PytDoNyoiT696V@dpg-d6b4mq4hncsc7386sfag-a/db_fazcomfe?sslmode=require"
@@ -44,43 +44,53 @@ class Produto(db.Model):
     vendido = db.Column(db.Integer, default=0)
     imagem_local = db.Column(db.String(100))
 
-# --- FUNÇÃO DE CORREÇÃO DE BANCO (ANTI-ERRO) ---
-def corrigir_banco():
+# --- CORREÇÃO AGRESSIVA DE BANCO ---
+def forcar_atualizacao_banco():
     with app.app_context():
+        # Cria tabelas novas se não existirem
         db.create_all()
-        # Adiciona colunas novas caso elas não existam (Evita o erro UndefinedColumn)
-        try:
-            db.session.execute(text("ALTER TABLE bar_produtos ADD COLUMN IF NOT EXISTS preco_custo FLOAT DEFAULT 0.0"))
-            db.session.execute(text("ALTER TABLE bar_produtos ADD COLUMN IF NOT EXISTS preco_venda FLOAT DEFAULT 0.0"))
-            db.session.execute(text("ALTER TABLE bar_produtos ADD COLUMN IF NOT EXISTS estoque_inicial INTEGER DEFAULT 0"))
-            db.session.execute(text("ALTER TABLE bar_produtos ADD COLUMN IF NOT EXISTS vendido INTEGER DEFAULT 0"))
-            db.session.commit()
-        except Exception as e:
-            print(f"Nota: {e}")
+        # Adiciona TODAS as colunas possíveis que podem faltar
+        colunas = [
+            "ALTER TABLE bar_produtos ADD COLUMN IF NOT EXISTS preco_custo FLOAT DEFAULT 0.0",
+            "ALTER TABLE bar_produtos ADD COLUMN IF NOT EXISTS preco_venda FLOAT DEFAULT 0.0",
+            "ALTER TABLE bar_produtos ADD COLUMN IF NOT EXISTS estoque_inicial INTEGER DEFAULT 0",
+            "ALTER TABLE bar_produtos ADD COLUMN IF NOT EXISTS vendido INTEGER DEFAULT 0",
+            "ALTER TABLE bar_produtos ADD COLUMN IF NOT EXISTS imagem_local VARCHAR(100)"
+        ]
+        for sql in colunas:
+            try:
+                db.session.execute(text(sql))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
 
 with app.app_context():
-    corrigir_banco()
-    if not Produto.query.first():
-        bebidas = [
-            Produto(nome='Antarctica Lata (fardo 18)', imagem_local='antarctica.jpg'),
-            Produto(nome='Brahma Lata (fardo 18)', imagem_local='brahma.jpg'),
-            Produto(nome='Heineken 350ml (fardo 12)', imagem_local='heineken.jpg'),
-            Produto(nome='Amstel 473ml (fardo 12)', imagem_local='amstel.jpg'),
-            Produto(nome='Spaten 350ml (fardo 12)', imagem_local='spaten.jpg'),
-            Produto(nome='Coca-Cola Lata (fardo 12)', imagem_local='coca.jpg'),
-            Produto(nome='Guaraná Ant. (fardo 12)', imagem_local='guarana.jpg'),
-            Produto(nome='Red Bull (fardo 24)', imagem_local='redbull.jpg'),
-            Produto(nome='Red Label (Unidade)', imagem_local='redlabel.jpg'),
-            Produto(nome='Black Label (Unidade)', imagem_local='blacklabel.jpg')
-        ]
-        db.session.add_all(bebidas)
-    
+    forcar_atualizacao_banco()
+    # Tenta carregar os produtos, se der erro de coluna, ele ignora para o app não crashar
+    try:
+        if not Produto.query.first():
+            bebidas = [
+                Produto(nome='Antarctica Lata (fardo 18)', imagem_local='antarctica.jpg'),
+                Produto(nome='Brahma Lata (fardo 18)', imagem_local='brahma.jpg'),
+                Produto(nome='Heineken 350ml (fardo 12)', imagem_local='heineken.jpg'),
+                Produto(nome='Amstel 473ml (fardo 12)', imagem_local='amstel.jpg'),
+                Produto(nome='Spaten 350ml (fardo 12)', imagem_local='spaten.jpg'),
+                Produto(nome='Coca-Cola Lata (fardo 12)', imagem_local='coca.jpg'),
+                Produto(nome='Guaraná Ant. (fardo 12)', imagem_local='guarana.jpg'),
+                Produto(nome='Red Bull (fardo 24)', imagem_local='redbull.jpg'),
+                Produto(nome='Red Label (Unidade)', imagem_local='redlabel.jpg'),
+                Produto(nome='Black Label (Unidade)', imagem_local='blacklabel.jpg')
+            ]
+            db.session.add_all(bebidas)
+            db.session.commit()
+    except Exception as e:
+        print(f"Erro ao carregar produtos iniciais: {e}")
+
     if not Usuario.query.filter_by(username='wagner').first():
         db.session.add(Usuario(username='wagner', senha='123', cargo='admin'))
-    
-    db.session.commit()
+        db.session.commit()
 
-# --- RESTANTE DO CÓDIGO (LOGIN, ADMIN, PORTARIA) ---
+# --- SEGURANÇA E ROTAS ---
 
 def login_obrigatorio(f):
     @wraps(f)
@@ -121,8 +131,6 @@ def admin_evento():
     venda_total = sum([p.preco_venda * p.vendido for p in produtos])
     lucro = sum([(p.preco_venda - p.preco_custo) * p.vendido for p in produtos])
     return render_template('admin_bar.html', produtos=produtos, custo_total=custo_estoque, faturamento=venda_total, lucro=lucro, clientes=Cliente.query.all(), staff=Usuario.query.all())
-
-# --- MANTENHA AS OUTRAS ROTAS IGUAIS (INDEX, PAGAMENTO, ETC) ---
 
 @app.route('/')
 def index(): return render_template('index.html', preco=45.0)
