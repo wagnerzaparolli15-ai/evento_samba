@@ -2,28 +2,27 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Admin - Faz com Fé</title>
+    <title>Admin - Bafafá</title>
     <style>
         body { background: #1a1a1a; color: white; font-family: sans-serif; padding: 20px; }
         .card { background: #2d2d2d; padding: 15px; margin-bottom: 20px; border-radius: 10px; border: 1px solid #f1c40f; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 10px; border-bottom: 1px solid #444; text-align: left; }
         .btn { background: #28a745; color: white; padding: 8px 15px; border: none; cursor: pointer; text-decoration: none; border-radius: 5px; font-weight: bold; }
-        input, select { padding: 10px; margin: 5px; border-radius: 5px; border: 1px solid #444; background: #333; color: white; width: 160px; }
+        input { padding: 8px; margin: 5px; border-radius: 5px; border: 1px solid #444; background: #333; color: white; }
     </style>
 </head>
 <body>
-    <h2>📊 Painel do Bafafá - Faz com Fé</h2>
+    <h2>📊 Painel de Controle - Bafafá</h2>
     <div class="card">
-        <h3>➕ Adicionar Produto com Foto</h3>
+        <h3>➕ Adicionar Produto ao Bar</h3>
         <form method="POST">
             <input type="text" name="nome" placeholder="Nome" required>
-            <input type="number" step="0.01" name="preco_venda" placeholder="Venda" required>
-            <input type="number" step="0.01" name="preco_custo" placeholder="Custo" required>
+            <input type="number" step="0.01" name="preco_venda" placeholder="Preço Venda" required>
+            <input type="number" step="0.01" name="preco_custo" placeholder="Preço Custo" required>
             <input type="number" name="estoque" placeholder="Qtd" required>
-            <input type="text" name="imagem_url" placeholder="Link da Logomarca/Foto">
-            <select name="categoria"><option value="BEBIDAS">BEBIDAS</option><option value="COMIDA">COMIDA</option></select>
-            <button type="submit" class="btn">SALVAR</button>
+            <input type="text" name="imagem_url" placeholder="Link da Foto">
+            <button type="submit" class="btn">SALVAR PRODUTO</button>
         </form>
     </div>
     <div class="card">
@@ -33,7 +32,7 @@
             {% for c in clientes %}
             <tr>
                 <td>{{ c.nome }}</td>
-                <td>{{ "✅ No Bar" if c.utilizado else "⏳ Aguardando" }}</td>
+                <td>{{ "✅ NO BAR" if c.utilizado else "⏳ AGUARDANDO" }}</td>
                 <td>
                     {% if not c.utilizado %}
                     <a href="{{ url_for('checkin', id=c.id) }}" class="btn" style="background:#f1c40f; color:black;">LIBERAR ACESSO</a>

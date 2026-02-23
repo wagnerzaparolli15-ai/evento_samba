@@ -14,6 +14,7 @@ db = SQLAlchemy(app)
 # --- MERCADO PAGO ---
 sdk = mercadopago.SDK("APP_USR-3244228687878580-021915-5528b1d97c9055fab65127d73dc1427d-24221819")
 
+# --- MODELOS ---
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100))
@@ -35,28 +36,10 @@ class Produto(db.Model):
 with app.app_context():
     db.create_all()
 
+# --- ROTAS DE VENDA ---
 @app.route('/')
 def index():
     return render_template('index.html', preco=45.0)
-
-# ROTA DE ADMIN QUE ESTAVA DANDO ERRO 404
-@app.route('/admin/bar/produtos', methods=['GET', 'POST'])
-def admin_bar_produtos():
-    if request.method == 'POST':
-        p = Produto(
-            nome=request.form.get('nome'),
-            preco=float(request.form.get('preco_venda')),
-            preco_custo=float(request.form.get('preco_custo')),
-            estoque=int(request.form.get('estoque')),
-            imagem_url=request.form.get('imagem_url')
-        )
-        db.session.add(p)
-        db.session.commit()
-        return redirect(url_for('admin_bar_produtos'))
-    
-    produtos = Produto.query.all()
-    clientes = Cliente.query.order_by(Cliente.id.desc()).all()
-    return render_template('admin_bar.html', produtos=produtos, clientes=clientes)
 
 @app.route('/reservar', methods=['POST'])
 def reservar():
@@ -87,9 +70,10 @@ def pagamento(id):
 @app.route('/ingresso/<int:id>')
 def validar_ingresso(id):
     c = Cliente.query.get_or_404(id)
+    # VERIFICAÇÃO REAL COM MERCADO PAGO
     if not c.pago and c.payment_id:
         info = sdk.payment().get(c.payment_id)
-        if info["response"]["status"] == "approved":
+        if info["response"].get("status") == "approved":
             c.pago = True
             db.session.commit()
         else:
@@ -98,13 +82,31 @@ def validar_ingresso(id):
     checkin_url = f"https://evento-samba.onrender.com/checkin/{c.id}"
     return render_template('obrigado.html', nome=c.nome, id_reserva=c.id, checkin_url=checkin_url)
 
+# --- ROTAS DE ADMIN E BAR ---
+@app.route('/admin/bar/produtos', methods=['GET', 'POST'])
+def admin_bar_produtos():
+    if request.method == 'POST':
+        p = Produto(
+            nome=request.form.get('nome'),
+            preco=float(request.form.get('preco_venda')),
+            preco_custo=float(request.form.get('preco_custo')),
+            estoque=int(request.form.get('estoque')),
+            imagem_url=request.form.get('imagem_url')
+        )
+        db.session.add(p)
+        db.session.commit()
+        return redirect(url_for('admin_bar_produtos'))
+    produtos = Produto.query.all()
+    clientes = Cliente.query.order_by(Cliente.id.desc()).all()
+    return render_template('admin_bar.html', produtos=produtos, clientes=clientes)
+
 @app.route('/checkin/<int:id>')
 def checkin(id):
     c = Cliente.query.get_or_404(id)
     c.utilizado = True
     c.pago = True
     db.session.commit()
-    return redirect(url_for('admin_bar_produtos'))
+    return render_template('recepcao.html', c=c)
 
 @app.route('/admin/reset-total')
 def reset_total():
