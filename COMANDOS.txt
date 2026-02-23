@@ -1,38 +1,20 @@
 https://evento-samba.onrender.com/admin/reset-total
 
-https://evento-samba.onrender.com/admin/bar/produtos
+O Gemini disse
+Para garantir que você tenha o controle total do Bafafá na palma da mão, aqui estão os links estratégicos organizados por função.
 
-Página de Venda (Início): Onde o cliente começa a reserva.
-👉 https://evento-samba.onrender.com/
+Recomendo que você copie essa lista e cole no seu WhatsApp ou em um bloco de notas no seu ThinkPad:
 
-Link de Validação (O que o cliente clica): É o link que o cliente acessa após pagar para ver o ingresso ou entrar no bar.
-👉 https://evento-samba.onrender.com/ingresso/1
-(Nota: O número "1" no final muda para cada cliente: 1, 2, 3...)
+🎫 1. Links de Acesso da Equipe (Staff)
+Estes links são para você e para os seus funcionários. Exigem login e senha.
 
+Portal de Login Único (Obrigatório para começar):
+👉 https://evento-samba.onrender.com/login-staff
+(Todo funcionário deve passar por aqui primeiro no início do turno).
 
-cd C:\Users\windows\Desktop\evento_samba
+Painel de Administração Geral (Seu Controle):
+👉 https://evento-samba.onrender.com/admin/evento
+(Onde você cadastra staff, vê quem entrou e gerencia o bar).
 
-
-Objetivo,Comando
-Ver se os arquivos estão lá,ls
-Subir mudanças para o ar,git add .
-"Criar uma ""etiqueta"" na mudança","git commit -m ""Explicação da mudança"""
-Enviar para o site (Render),git push origin master
-
-Comando,O que ele faz
-cd C:\Users\windows\Desktop\evento_samba,Entra direto na pasta do seu projeto.
-cd ..,Volta uma pasta para trás (sai de evento_samba e vai para o Desktop).
-ls,Lista todos os arquivos que estão dentro da pasta onde você está.
-pwd,Mostra o caminho completo de onde você está agora.
-mkdir nome_da_pasta,Cria uma pasta nova (caso você queira organizar fotos ou logs).
-
-
-
-
- cd C:\Users\windows\Desktop\evento_samba
-
-Página,Link Exato
-Venda (Início),https://evento-samba.onrender.com/
-Gestão (Admin),https://evento-samba.onrender.com/admin/bar/produtos
-Reset (Limpeza),https://evento-samba.onrender.com/admin/reset-total
-
+Link de Logout (Sair do sistema):
+👉 https://evento-samba.onrender.com/logout
