@@ -169,7 +169,7 @@ def logout():
 
 if __name__ == '__main__':
     with app.app_context():
-        # db.drop_all() # Use apenas se precisar resetar o banco do zero
+        db.drop_all()  # <--- ESSA LINHA VAI LIMPAR O ERRO
         db.create_all()
         if not Equipe.query.filter_by(usuario='wagner').first():
             db.session.add(Equipe(nome='Wagner', usuario='wagner', senha='123', cargo='admin', cachet=0))
