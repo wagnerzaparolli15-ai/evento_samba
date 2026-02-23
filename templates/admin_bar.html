@@ -1,36 +1,36 @@
-<body style="background:#121212; color:white; font-family:sans-serif; padding:20px;">
-    <h2>ADMINISTRAÇÃO BAF AFÁ 🎷</h2>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Bafafá</title>
+    <style>
+        body { background: #121212; color: white; font-family: sans-serif; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; border-bottom: 1px solid #333; text-align: left; }
+        input { background: #000; color: #f1c40f; border: 1px solid #444; width: 60px; }
+    </style>
+</head>
+<body>
+    <h2 style="color: #f1c40f;">FINANCEIRO</h2>
+    <p>Custo Total: R$ {{ "%.2f"|format(custo_total) }} | <b>Lucro: R$ {{ "%.2f"|format(lucro) }}</b></p>
     
-    <div style="background: #c0392b; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-        <h3 style="margin: 0;">🚨 RESET DO EVENTO</h3>
-        <p style="font-size: 11px;">Limpa clientes e zerar vendas para iniciar o evento real.</p>
-        <form action="/admin/reset-total" method="POST" onsubmit="return confirm('TEM CERTEZA? Isso apaga tudo para começar do zero.');">
-            <button type="submit" style="background: white; color: #c0392b; border: none; padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer;">ZERAR TUDO AGORA</button>
-        </form>
-    </div>
+    <form action="/admin/reset-total" method="POST" onsubmit="return confirm('Zerar tudo?')">
+        <button type="submit" style="background: red; color: white; padding: 10px; border: none; border-radius: 5px;">🚨 RESETAR EVENTO</button>
+    </form>
 
-    <div style="background:#1e1e1e; padding:15px; border-radius:10px; margin-bottom:20px; border:1px solid #f1c40f;">
-        <p>CUSTO TOTAL: <b>R$ {{ "%.2f"|format(custo_total) }}</b></p>
-        <p>LUCRO PREVISTO: <b style="color:#2ecc71;">R$ {{ "%.2f"|format(lucro) }}</b></p>
-    </div>
-
-    <table style="width:100%; font-size: 12px; border-collapse: collapse;">
-        <tr style="color:#f1c40f; text-align: left;">
-            <th>Produto</th><th>Custo</th><th>Venda</th><th>Estoque</th><th>Ação</th>
-        </tr>
+    <table>
+        <tr><th>Produto</th><th>Custo</th><th>Venda</th><th>Estoque</th><th>Salvar</th></tr>
         {% for p in produtos %}
-        <tr style="border-bottom: 1px solid #333;">
+        <tr>
             <form method="POST">
+                <input type="hidden" name="id_prod" value="{{ p.id }}">
                 <td>{{ p.nome }}</td>
-                <td><input type="number" step="0.01" name="custo" value="{{ p.preco_custo }}" style="width:50px; background:#000; color:white;"></td>
-                <td><input type="number" step="0.01" name="venda" value="{{ p.preco_venda }}" style="width:50px; background:#000; color:white;"></td>
-                <td><input type="number" name="estoque" value="{{ p.estoque_inicial }}" style="width:40px; background:#000; color:white;"></td>
-                <td>
-                    <input type="hidden" name="id_prod" value="{{ p.id }}">
-                    <button type="submit">💾</button>
-                </td>
+                <td><input type="number" step="0.01" name="custo" value="{{ p.preco_custo }}"></td>
+                <td><input type="number" step="0.01" name="venda" value="{{ p.preco_venda }}"></td>
+                <td><input type="number" name="estoque" value="{{ p.estoque_inicial }}"></td>
+                <td><button type="submit">💾</button></td>
             </form>
         </tr>
         {% endfor %}
     </table>
 </body>
+</html>

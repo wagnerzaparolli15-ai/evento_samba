@@ -1,26 +1,30 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portaria Bafafá</title>
     <style>
-        body { background: #000; color: white; font-family: sans-serif; text-align: center; }
-        .lista { text-align: left; max-width: 400px; margin: auto; padding: 20px; }
-        .row { border-bottom: 1px solid #333; padding: 10px; display: flex; justify-content: space-between; }
-        .ok { color: #2ecc71; font-weight: bold; }
+        body { background: #000; color: #fff; font-family: sans-serif; text-align: center; }
+        .card { background: #1a1a1a; padding: 15px; margin: 10px; border-radius: 10px; border-left: 5px solid #f1c40f; display: flex; justify-content: space-between; align-items: center; }
+        .btn { background: #2ecc71; color: #000; padding: 10px; text-decoration: none; border-radius: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h2 style="color:#f1c40f;">VALIDADOR PORTARIA</h2>
-    <p>Staff: {{ session['usuario_nome'] }} | <a href="/logout" style="color:red;">Sair</a></p>
-    <div class="lista">
+    <img src="/static/logo.jpg" style="width: 80px; border-radius: 50%; margin-top: 20px;">
+    <h2 style="color: #f1c40f;">PORTARIA</h2>
+    <div style="max-width: 500px; margin: auto;">
         {% for c in clientes %}
-        <div class="row">
-            <span>{{ c.nome }}</span>
-            <span class="{{ 'ok' if c.utilizado else '' }}">{{ 'DENTRO' if c.utilizado else 'FORA' }}</span>
+        <div class="card">
+            <div style="text-align: left;"><b>{{ c.nome }}</b><br><small>{{ c.telefone }}</small></div>
+            {% if not c.utilizado %}
+                <a href="/valida-portaria/{{ c.id }}" class="btn">LIBERAR</a>
+            {% else %}
+                <span style="color: #e74c3c;">DENTRO (por {{ c.quem_liberou }})</span>
+            {% endif %}
         </div>
         {% endfor %}
     </div>
+    <br><a href="/logout" style="color: #888;">Sair do Sistema</a>
 </body>
 </html>
