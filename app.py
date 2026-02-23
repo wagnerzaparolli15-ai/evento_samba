@@ -44,15 +44,15 @@ class Produto(db.Model):
     vendido = db.Column(db.Integer, default=0)
     imagem_local = db.Column(db.String(100))
 
-# --- SINCRONIZAÇÃO (LIMPEZA AUTOMÁTICA) ---
+# --- SINCRONIZAÇÃO (LIMPEZA DE COLUNAS ANTIGAS) ---
 def sincronizar_sistema():
     with app.app_context():
         try:
             inspector = inspect(db.engine)
+            # Se a tabela existe, verificamos se ela está com a estrutura velha
             if 'bar_produtos' in inspector.get_table_names():
-                # Verifica se a coluna antiga 'preco' ainda existe e limpa
                 cols = [c['name'] for c in inspector.get_columns('bar_produtos')]
-                if 'preco' in cols:
+                if 'preco' in cols: # Coluna fantasma detectada
                     db.session.execute(text("DROP TABLE bar_produtos CASCADE"))
                     db.session.commit()
             
@@ -78,7 +78,6 @@ def sincronizar_sistema():
                 db.session.add(Usuario(username='wagner', senha='123', cargo='admin'))
                 db.session.commit()
         except Exception as e:
-            print(f"Erro Sinc: {e}")
             db.session.rollback()
 
 sincronizar_sistema()
@@ -156,7 +155,6 @@ def valida_portaria(id):
 def painel_barman():
     return render_template('gestao_bar.html', produtos=Produto.query.all())
 
-# --- FLUXO CLIENTE ---
 @app.route('/')
 def index(): return render_template('index.html', preco=45.0)
 
