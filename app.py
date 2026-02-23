@@ -36,7 +36,7 @@ class Produto(db.Model):
 with app.app_context():
     db.create_all()
 
-# --- ROTAS DE VENDA ---
+# --- ROTAS ---
 @app.route('/')
 def index():
     return render_template('index.html', preco=45.0)
@@ -77,21 +77,14 @@ def validar_ingresso(id):
             db.session.commit()
         else:
             return render_template('templates-feedback.html', tipo='aguardando')
-    
     checkin_url = f"https://evento-samba.onrender.com/checkin/{c.id}"
     return render_template('obrigado.html', nome=c.nome, id_reserva=c.id, checkin_url=checkin_url)
 
-# --- ROTAS DE ADMINISTRAÇÃO ---
 @app.route('/admin/bar/produtos', methods=['GET', 'POST'])
 def admin_bar_produtos():
     if request.method == 'POST':
-        p = Produto(
-            nome=request.form.get('nome'),
-            preco=float(request.form.get('preco_venda')),
-            preco_custo=float(request.form.get('preco_custo')),
-            estoque=int(request.form.get('estoque')),
-            imagem_url=request.form.get('imagem_url')
-        )
+        p = Produto(nome=request.form.get('nome'), preco=float(request.form.get('preco_venda')),
+                    preco_custo=float(request.form.get('preco_custo')), estoque=int(request.form.get('estoque')))
         db.session.add(p)
         db.session.commit()
         return redirect(url_for('admin_bar_produtos'))
@@ -107,13 +100,20 @@ def checkin(id):
     db.session.commit()
     return redirect(url_for('admin_bar_produtos'))
 
+# RESET TURBO: Força a limpeza sem travar
 @app.route('/admin/reset-total')
 def reset_total():
-    db.session.execute(text("DROP TABLE IF EXISTS bar_produtos CASCADE;"))
-    db.session.execute(text("DROP TABLE IF EXISTS cliente CASCADE;"))
-    db.session.commit()
-    db.create_all()
-    return "<h1>Sucesso! Sistema recriado.</h1><a href='/admin/bar/produtos'>Voltar</a>"
+    try:
+        db.session.execute(text("TRUNCATE TABLE bar_produtos, cliente RESTART IDENTITY CASCADE;"))
+        db.session.commit()
+        return "<h1>Sucesso! Tabelas limpas.</h1><a href='/'>Voltar</a>"
+    except Exception as e:
+        db.session.rollback()
+        db.session.execute(text("DROP TABLE IF EXISTS bar_produtos CASCADE;"))
+        db.session.execute(text("DROP TABLE IF EXISTS cliente CASCADE;"))
+        db.session.commit()
+        db.create_all()
+        return f"<h1>Reset Forçado Concluído.</h1><a href='/'>Voltar</a>"
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
