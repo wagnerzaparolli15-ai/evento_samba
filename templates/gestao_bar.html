@@ -1,0 +1,9 @@
+<body style="background:#121212; color:white; font-family:sans-serif;">
+    <h2 style="color:#f1c40f;">GESTÃO DE BAR</h2>
+    <hr>
+    {% for p in produtos %}
+    <div style="padding:10px; border-bottom:1px solid #333;">
+        {{ p.nome }} - <b>Estoque: {{ p.estoque }}</b> - R$ {{ p.preco }}
+    </div>
+    {% endfor %}
+</body>

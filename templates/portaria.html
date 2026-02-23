@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portaria Bafafá</title>
+    <style>
+        body { background: #000; color: white; font-family: sans-serif; text-align: center; }
+        .lista { text-align: left; max-width: 400px; margin: auto; padding: 20px; }
+        .row { border-bottom: 1px solid #333; padding: 10px; display: flex; justify-content: space-between; }
+        .ok { color: #2ecc71; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h2 style="color:#f1c40f;">VALIDADOR PORTARIA</h2>
+    <p>Staff: {{ session['usuario_nome'] }} | <a href="/logout" style="color:red;">Sair</a></p>
+    <div class="lista">
+        {% for c in clientes %}
+        <div class="row">
+            <span>{{ c.nome }}</span>
+            <span class="{{ 'ok' if c.utilizado else '' }}">{{ 'DENTRO' if c.utilizado else 'FORA' }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
