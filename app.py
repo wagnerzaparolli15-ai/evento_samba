@@ -48,7 +48,6 @@ def index():
 
 @app.route('/reservar', methods=['POST'])
 def reservar():
-    # Otimização: Impede que o sistema quebre se o nome vier vazio
     nome_raw = request.form.get('nome', '')
     telefone_raw = request.form.get('telefone', '')
     
@@ -56,7 +55,7 @@ def reservar():
         return redirect(url_for('index'))
         
     nome = nome_raw.upper().strip()
-    telefone = re.sub(r"\D", "", telefone_raw) # Limpa os traços do telefone
+    telefone = re.sub(r"\D", "", telefone_raw)
     
     c = Cliente(nome=nome, telefone=telefone)
     db.session.add(c)
@@ -155,7 +154,6 @@ def admin_total():
             p.estoque = int(request.form.get('estoque', 0))
         db.session.commit()
 
-    # Otimização Financeira: O cálculo agora abate o preço de custo das bebidas vendidas
     produtos_db = Produto.query.all()
     receita_ingresso = db.session.query(db.func.count(Cliente.id)).filter(Cliente.pago == True).scalar() * 45.0
     receita_bar = sum([p.preco_venda * p.vendidos for p in produtos_db])
@@ -179,12 +177,11 @@ def logout():
     session.clear()
     return redirect(url_for('index'))
 
-# --- 7. INICIALIZAÇÃO E RESET ---
+# --- 7. INICIALIZAÇÃO E RESET TOTAL ---
 if __name__ == '__main__':
     with app.app_context():
-        # ATENÇÃO: Se o erro 500 persistir, DESCOMENTE a linha abaixo (remova o #), faça o deploy e depois comente novamente.
-        # db.drop_all() 
-        db.create_all()
+        db.drop_all()  # <=== DELETANDO O BANCO VELHO (SEM HASHTAG)
+        db.create_all() # <=== RECRIANDO O BANCO NOVO
         if not Equipe.query.filter_by(usuario='wagner').first():
             db.session.add(Equipe(nome='Wagner Master', usuario='wagner', senha='123', cargo='admin', cachet=0))
             db.session.commit()
