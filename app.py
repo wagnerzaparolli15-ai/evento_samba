@@ -5,16 +5,16 @@ from sqlalchemy import text
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
-# --- BANCO DE DADOS (Mantendo sua conexão atual) ---
+# --- BANCO DE DADOS ---
 uri = "postgresql://db_fazcomfe_user:bo24NlcJANvGehkj97PytDoNyoiT696V@dpg-d6b4mq4hncsc7386sfag-a/db_fazcomfe?sslmode=require"
 app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# --- MERCADO PAGO SDK ---
+# --- MERCADO PAGO ---
 sdk = mercadopago.SDK("APP_USR-3244228687878580-021915-5528b1d97c9055fab65127d73dc1427d-24221819")
 
-# --- MODELOS (Preservando Estrutura) ---
+# --- MODELOS ---
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100))
@@ -35,7 +35,7 @@ class Produto(db.Model):
 with app.app_context():
     db.create_all()
 
-# --- ROTAS DE VENDA E PAGAMENTO ---
+# --- ROTAS DE VENDA ---
 @app.route('/')
 def index():
     return render_template('index.html', preco=45.0)
@@ -66,10 +66,12 @@ def pagamento(id):
     db.session.commit()
     return render_template('pagamento.html', c=c, pix_codigo=pix["qr_code"], qrcode_base64=pix["qr_code_base64"])
 
-# --- ROTA DE INGRESSO (Entrega o QR Code para o Segurança) ---
+# --- ROTA DO INGRESSO (AQUI ESTÁ A CORREÇÃO) ---
 @app.route('/ingresso/<int:id>')
 def validar_ingresso(id):
     c = Cliente.query.get_or_404(id)
+    
+    # Verifica pagamento se ainda não estiver marcado como pago
     if not c.pago and c.payment_id:
         info = sdk.payment().get(c.payment_id)
         if info["response"].get("status") == "approved":
@@ -78,30 +80,26 @@ def validar_ingresso(id):
         else:
             return render_template('templates-feedback.html', tipo='aguardando')
     
-    # O link que o segurança lerá
+    # Se estiver pago (pelo MP ou pela Admin), gera o link de check-in para o QR Code
     checkin_url = f"https://evento-samba.onrender.com/checkin/{c.id}"
     return render_template('obrigado.html', c=c, checkin_url=checkin_url)
 
-# --- ROTA DE CHECK-IN (O que acontece quando o segurança escaneia) ---
+# --- CHECK-IN E BAR ---
 @app.route('/checkin/<int:id>')
 def checkin(id):
     c = Cliente.query.get_or_404(id)
-    c.pago = True # Confirmação forçada na porta
-    c.utilizado = True # Marca que entrou
+    c.pago = True
+    c.utilizado = True
     db.session.commit()
-    # Envia o cliente para a recepção (Bar Digital)
     return render_template('recepcao.html', c=c)
 
-# --- BAR DIGITAL (Página de Consumo do Cliente) ---
 @app.route('/bar/<int:id>')
 def bar_digital(id):
     c = Cliente.query.get_or_404(id)
-    if not c.utilizado:
-        return "<h1>Acesso ao Bar negado. Valide sua entrada na portaria primeiro!</h1>"
     produtos = Produto.query.all()
     return render_template('bar.html', c=c, produtos=produtos)
 
-# --- ADMINISTRAÇÃO TOTAL ---
+# --- ADMINISTRAÇÃO ---
 @app.route('/admin/evento', methods=['GET', 'POST'])
 def admin_evento():
     if request.method == 'POST':
@@ -115,7 +113,6 @@ def admin_evento():
         db.session.add(p)
         db.session.commit()
         return redirect(url_for('admin_evento'))
-    
     produtos = Produto.query.all()
     clientes = Cliente.query.order_by(Cliente.id.desc()).all()
     return render_template('admin_bar.html', produtos=produtos, clientes=clientes)
@@ -124,7 +121,7 @@ def admin_evento():
 def reset_total():
     db.session.execute(text("TRUNCATE TABLE bar_produtos, cliente RESTART IDENTITY CASCADE;"))
     db.session.commit()
-    return "<h1>Sistema Reiniciado com Sucesso!</h1><a href='/admin/evento'>Voltar</a>"
+    return "<h1>Sistema Limpo!</h1><a href='/admin/evento'>Voltar</a>"
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
