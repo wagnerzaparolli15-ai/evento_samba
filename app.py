@@ -17,7 +17,7 @@ db = SQLAlchemy(app)
 # --- MERCADO PAGO ---
 sdk = mercadopago.SDK("APP_USR-3244228687878580-021915-5528b1d97c9055fab65127d73dc1427d-24221819")
 
-# --- MODELOS (ESTRUTURA COMPLETA) ---
+# --- MODELOS ---
 class Usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
@@ -44,42 +44,46 @@ class Produto(db.Model):
     vendido = db.Column(db.Integer, default=0)
     imagem_local = db.Column(db.String(100))
 
-# --- SINCRONIZAÇÃO TOTAL (CORREÇÃO DE ERROS DE BANCO) ---
+# --- SINCRONIZAÇÃO (LIMPEZA AUTOMÁTICA) ---
 def sincronizar_sistema():
     with app.app_context():
-        # Deleta a tabela antiga para eliminar colunas fantasmas (como a 'preco')
         try:
-            db.session.execute(text("DROP TABLE IF EXISTS bar_produtos CASCADE"))
-            db.session.commit()
-        except Exception:
+            inspector = inspect(db.engine)
+            if 'bar_produtos' in inspector.get_table_names():
+                # Verifica se a coluna antiga 'preco' ainda existe e limpa
+                cols = [c['name'] for c in inspector.get_columns('bar_produtos')]
+                if 'preco' in cols:
+                    db.session.execute(text("DROP TABLE bar_produtos CASCADE"))
+                    db.session.commit()
+            
+            db.create_all()
+
+            if not Produto.query.first():
+                lista = [
+                    Produto(nome='Antarctica Lata (fardo 18)', imagem_local='antarctica.jpg'),
+                    Produto(nome='Brahma Lata (fardo 18)', imagem_local='brahma.jpg'),
+                    Produto(nome='Heineken 350ml (fardo 12)', imagem_local='heineken.jpg'),
+                    Produto(nome='Amstel 473ml (fardo 12)', imagem_local='amstel.jpg'),
+                    Produto(nome='Spaten 350ml (fardo 12)', imagem_local='spaten.jpg'),
+                    Produto(nome='Coca-Cola Lata (fardo 12)', imagem_local='coca.jpg'),
+                    Produto(nome='Guaraná Ant. (fardo 12)', imagem_local='guarana.jpg'),
+                    Produto(nome='Red Bull (fardo 24)', imagem_local='redbull.jpg'),
+                    Produto(nome='Red Label (Unidade)', imagem_local='redlabel.jpg'),
+                    Produto(nome='Black Label (Unidade)', imagem_local='blacklabel.jpg')
+                ]
+                db.session.add_all(lista)
+                db.session.commit()
+            
+            if not Usuario.query.filter_by(username='wagner').first():
+                db.session.add(Usuario(username='wagner', senha='123', cargo='admin'))
+                db.session.commit()
+        except Exception as e:
+            print(f"Erro Sinc: {e}")
             db.session.rollback()
-
-        # Reconstrói com a estrutura certa e interligada
-        db.create_all()
-
-        if not Produto.query.first():
-            lista = [
-                Produto(nome='Antarctica Lata (fardo 18)', imagem_local='antarctica.jpg'),
-                Produto(nome='Brahma Lata (fardo 18)', imagem_local='brahma.jpg'),
-                Produto(nome='Heineken 350ml (fardo 12)', imagem_local='heineken.jpg'),
-                Produto(nome='Amstel 473ml (fardo 12)', imagem_local='amstel.jpg'),
-                Produto(nome='Spaten 350ml (fardo 12)', imagem_local='spaten.jpg'),
-                Produto(nome='Coca-Cola Lata (fardo 12)', imagem_local='coca.jpg'),
-                Produto(nome='Guaraná Ant. (fardo 12)', imagem_local='guarana.jpg'),
-                Produto(nome='Red Bull (fardo 24)', imagem_local='redbull.jpg'),
-                Produto(nome='Red Label (Unidade)', imagem_local='redlabel.jpg'),
-                Produto(nome='Black Label (Unidade)', imagem_local='blacklabel.jpg')
-            ]
-            db.session.add_all(lista)
-            db.session.commit()
-        
-        if not Usuario.query.filter_by(username='wagner').first():
-            db.session.add(Usuario(username='wagner', senha='123', cargo='admin'))
-            db.session.commit()
 
 sincronizar_sistema()
 
-# --- SEGURANÇA E ACESSOS ---
+# --- SEGURANÇA ---
 def login_obrigatorio(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -105,14 +109,15 @@ def admin_evento():
     if request.method == 'POST':
         if 'id_prod' in request.form:
             p = Produto.query.get(request.form.get('id_prod'))
-            p.preco_custo = float(request.form.get('custo') or 0)
-            p.preco_venda = float(request.form.get('venda') or 0)
+            p.preco_custo = float(request.form.get('custo') or 0.0)
+            p.preco_venda = float(request.form.get('venda') or 0.0)
             p.estoque_inicial = int(request.form.get('estoque') or 0)
             db.session.commit()
         return redirect(url_for('admin_evento'))
+    
     produtos = Produto.query.all()
-    c_tot = sum([p.preco_custo * p.estoque_inicial for p in produtos])
-    lucro = sum([(p.preco_venda - p.preco_custo) * p.estoque_inicial for p in produtos])
+    c_tot = sum([(p.preco_custo or 0) * (p.estoque_inicial or 0) for p in produtos])
+    lucro = sum([((p.preco_venda or 0) - (p.preco_custo or 0)) * (p.estoque_inicial or 0) for p in produtos])
     return render_template('admin_bar.html', produtos=produtos, custo_total=c_tot, lucro=lucro, staff=Usuario.query.all())
 
 @app.route('/admin/reset-total', methods=['POST'])
@@ -127,14 +132,22 @@ def reset_total():
 @app.route('/painel-portaria')
 @login_obrigatorio
 def painel_portaria():
-    return render_template('portaria.html', clientes=Cliente.query.order_by(Cliente.id.desc()).all())
+    try:
+        clientes = Cliente.query.order_by(Cliente.id.desc()).all()
+        return render_template('portaria.html', clientes=clientes)
+    except:
+        return "Erro ao carregar lista. Tente o Reset no Admin."
 
 @app.route('/valida-portaria/<int:id>')
 @login_obrigatorio
 def valida_portaria(id):
     c = Cliente.query.get_or_404(id)
-    if c.utilizado: return f"<h1>ERRO: JÁ ENTROU!</h1><p>Liberado por {c.quem_liberou}</p>"
-    c.utilizado, c.pago, c.quem_liberou, c.data_entrada = True, True, session['usuario_nome'], datetime.now()
+    if c.utilizado:
+        return f"<h1>ERRO: JÁ ENTROU!</h1><p>Liberado por {c.quem_liberou or 'Sistema'}</p><a href='/painel-portaria'>Voltar</a>"
+    c.utilizado = True
+    c.pago = True
+    c.quem_liberou = session.get('usuario_nome', 'Admin')
+    c.data_entrada = datetime.now()
     db.session.commit()
     return redirect(url_for('painel_portaria'))
 
