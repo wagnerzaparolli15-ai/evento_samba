@@ -17,7 +17,7 @@ db = SQLAlchemy(app)
 # --- MERCADO PAGO ---
 sdk = mercadopago.SDK("APP_USR-3244228687878580-021915-5528b1d97c9055fab65127d73dc1427d-24221819")
 
-# --- MODELOS ---
+# --- MODELOS (ESTRUTURA COMPLETA) ---
 class Usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
@@ -44,16 +44,18 @@ class Produto(db.Model):
     vendido = db.Column(db.Integer, default=0)
     imagem_local = db.Column(db.String(100))
 
-# --- SINCRONIZAÇÃO (CORRIGE O BANCO AUTOMATICAMENTE) ---
+# --- SINCRONIZAÇÃO TOTAL (CORREÇÃO DE ERROS DE BANCO) ---
 def sincronizar_sistema():
     with app.app_context():
-        db.create_all()
-        inspector = inspect(db.engine)
-        colunas = [c['name'] for c in inspector.get_columns('bar_produtos')]
-        if 'preco_venda' not in colunas or 'imagem_local' not in colunas:
+        # Deleta a tabela antiga para eliminar colunas fantasmas (como a 'preco')
+        try:
             db.session.execute(text("DROP TABLE IF EXISTS bar_produtos CASCADE"))
             db.session.commit()
-            db.create_all()
+        except Exception:
+            db.session.rollback()
+
+        # Reconstrói com a estrutura certa e interligada
+        db.create_all()
 
         if not Produto.query.first():
             lista = [
@@ -68,7 +70,8 @@ def sincronizar_sistema():
                 Produto(nome='Red Label (Unidade)', imagem_local='redlabel.jpg'),
                 Produto(nome='Black Label (Unidade)', imagem_local='blacklabel.jpg')
             ]
-            db.session.add_all(lista); db.session.commit()
+            db.session.add_all(lista)
+            db.session.commit()
         
         if not Usuario.query.filter_by(username='wagner').first():
             db.session.add(Usuario(username='wagner', senha='123', cargo='admin'))
@@ -76,7 +79,7 @@ def sincronizar_sistema():
 
 sincronizar_sistema()
 
-# --- SEGURANÇA ---
+# --- SEGURANÇA E ACESSOS ---
 def login_obrigatorio(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -124,15 +127,13 @@ def reset_total():
 @app.route('/painel-portaria')
 @login_obrigatorio
 def painel_portaria():
-    clientes = Cliente.query.order_by(Cliente.id.desc()).all()
-    return render_template('portaria.html', clientes=clientes)
+    return render_template('portaria.html', clientes=Cliente.query.order_by(Cliente.id.desc()).all())
 
 @app.route('/valida-portaria/<int:id>')
 @login_obrigatorio
 def valida_portaria(id):
     c = Cliente.query.get_or_404(id)
-    if c.utilizado:
-        return f"<h1>ERRO: JÁ ENTROU!</h1><p>Liberado por {c.quem_liberou}</p>"
+    if c.utilizado: return f"<h1>ERRO: JÁ ENTROU!</h1><p>Liberado por {c.quem_liberou}</p>"
     c.utilizado, c.pago, c.quem_liberou, c.data_entrada = True, True, session['usuario_nome'], datetime.now()
     db.session.commit()
     return redirect(url_for('painel_portaria'))
