@@ -15,13 +15,13 @@ db = SQLAlchemy(app)
 # --- 2. MERCADO PAGO SDK ---
 sdk = mercadopago.SDK("APP_USR-3244228687878580-021915-5528b1d97c9055fab65127d73dc1427d-24221819")
 
-# --- 3. MODELOS (O que o Cérebro gerencia) ---
+# --- 3. MODELOS (Alinhados 100% com os HTMLs) ---
 class Equipe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100))
     usuario = db.Column(db.String(50), unique=True)
     senha = db.Column(db.String(50))
-    cargo = db.Column(db.String(30)) # admin, bar, portaria, etc.
+    cargo = db.Column(db.String(30)) 
     cachet = db.Column(db.Float, default=0.0)
 
 class Cliente(db.Model):
@@ -29,9 +29,9 @@ class Cliente(db.Model):
     nome = db.Column(db.String(100))
     telefone = db.Column(db.String(20))
     pago = db.Column(db.Boolean, default=False)
-    na_casa = db.Column(db.Boolean, default=False) # Para liberar o bar
+    na_casa = db.Column(db.Boolean, default=False) 
     payment_id = db.Column(db.String(100))
-    quem_liberou = db.Column(db.String(50), default="") # Para auditoria
+    quem_liberou = db.Column(db.String(50), default="") 
 
 class Produto(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -48,30 +48,50 @@ def index():
 
 @app.route('/reservar', methods=['POST'])
 def reservar():
-    c = Cliente(nome=request.form.get('nome').upper().strip(), telefone=request.form.get('telefone'))
-    db.session.add(c); db.session.commit()
+    # Otimização: Impede que o sistema quebre se o nome vier vazio
+    nome_raw = request.form.get('nome', '')
+    telefone_raw = request.form.get('telefone', '')
+    
+    if not nome_raw:
+        return redirect(url_for('index'))
+        
+    nome = nome_raw.upper().strip()
+    telefone = re.sub(r"\D", "", telefone_raw) # Limpa os traços do telefone
+    
+    c = Cliente(nome=nome, telefone=telefone)
+    db.session.add(c)
+    db.session.commit()
     return redirect(url_for('pagamento', id=c.id))
 
 @app.route('/pagamento/<int:id>')
 def pagamento(id):
     c = Cliente.query.get_or_404(id)
-    res = sdk.payment().create({
-        "transaction_amount": 45.0, "description": "Ingresso Bafafá",
-        "payment_method_id": "pix", "payer": {"email": "vendas@bafafa.com"}
-    })
-    pix = res["response"]["point_of_interaction"]["transaction_data"]
-    c.payment_id = str(res["response"]["id"]); db.session.commit()
-    return render_template('pagamento.html', c=c, pix_codigo=pix["qr_code"], qrcode_base64=pix["qr_code_base64"])
+    try:
+        res = sdk.payment().create({
+            "transaction_amount": 45.0, "description": "Ingresso Bafafá",
+            "payment_method_id": "pix", "payer": {"email": "vendas@bafafa.com"}
+        })
+        pix = res["response"]["point_of_interaction"]["transaction_data"]
+        c.payment_id = str(res["response"]["id"])
+        db.session.commit()
+        return render_template('pagamento.html', c=c, pix_codigo=pix["qr_code"], qrcode_base64=pix["qr_code_base64"])
+    except Exception as e:
+        return "Erro na geração do PIX. Tente novamente mais tarde."
 
 @app.route('/ingresso/<int:id>')
 def ingresso(id):
     c = Cliente.query.get_or_404(id)
     if not c.pago:
-        p_res = sdk.payment().get(c.payment_id)
-        if p_res["response"].get("status") == "approved":
-            c.pago = True; db.session.commit()
-        else:
+        try:
+            p_res = sdk.payment().get(c.payment_id)
+            if p_res.get("response", {}).get("status") == "approved":
+                c.pago = True
+                db.session.commit()
+            else:
+                return render_template('templates-feedback.html', id=id)
+        except:
             return render_template('templates-feedback.html', id=id)
+            
     checkin_url = url_for('validar_entrada', id=c.id, _external=True)
     return render_template('obrigado.html', c=c, checkin_url=checkin_url)
 
@@ -88,11 +108,12 @@ def login_staff():
 @app.route('/portaria')
 def portaria():
     if 'staff_id' not in session: return redirect(url_for('login_staff'))
-    clientes = Cliente.query.filter_by(pago=True).all()
+    clientes = Cliente.query.filter_by(pago=True).order_by(Cliente.na_casa.asc()).all()
     return render_template('portaria.html', clientes=clientes)
 
 @app.route('/validar-entrada/<int:id>')
 def validar_entrada(id):
+    if 'staff_id' not in session: return redirect(url_for('login_staff'))
     c = Cliente.query.get_or_404(id)
     c.na_casa = True
     c.quem_liberou = session.get('usuario_nome', 'Sistema')
@@ -111,13 +132,13 @@ def comprar_item():
     data = request.json
     for item in data.get('itens', []):
         p = Produto.query.get(item['id'])
-        if p:
+        if p and p.estoque > 0:
             p.estoque -= 1
             p.vendidos += 1
     db.session.commit()
     return jsonify({"status": "success"})
 
-# --- 6. ADMINISTRAÇÃO E CUSTEIO (O Painel Master) ---
+# --- 6. ADMINISTRAÇÃO E CUSTEIO (A Matemática Correta) ---
 @app.route('/admin_total', methods=['GET', 'POST'])
 def admin_total():
     if session.get('cargo') != 'admin': return redirect(url_for('login_staff'))
@@ -129,29 +150,40 @@ def admin_total():
             db.session.add(e)
         if 'id_prod' in request.form:
             p = Produto.query.get(request.form.get('id_prod'))
-            p.preco_custo = float(request.form.get('custo'))
-            p.preco_venda = float(request.form.get('venda'))
-            p.estoque = int(request.form.get('estoque'))
+            p.preco_custo = float(request.form.get('custo', 0))
+            p.preco_venda = float(request.form.get('venda', 0))
+            p.estoque = int(request.form.get('estoque', 0))
         db.session.commit()
 
-    # Financeiro real
+    # Otimização Financeira: O cálculo agora abate o preço de custo das bebidas vendidas
+    produtos_db = Produto.query.all()
     receita_ingresso = db.session.query(db.func.count(Cliente.id)).filter(Cliente.pago == True).scalar() * 45.0
-    receita_bar = sum([p.preco_venda * p.vendidos for p in Produto.query.all()])
-    custos = db.session.query(db.func.sum(Equipe.cachet)).scalar() or 0
+    receita_bar = sum([p.preco_venda * p.vendidos for p in produtos_db])
     
-    fin = {"receita": receita_ingresso + receita_bar, "despesas": custos, "lucro": (receita_ingresso + receita_bar) - custos}
-    return render_template('admin_total.html', equipe=Equipe.query.all(), produtos=Produto.query.all(), clientes=Cliente.query.all(), fin=fin)
+    custo_produtos = sum([p.preco_custo * p.vendidos for p in produtos_db])
+    custos_equipe = db.session.query(db.func.sum(Equipe.cachet)).scalar() or 0
+    
+    receita_total = receita_ingresso + receita_bar
+    despesas_totais = custos_equipe + custo_produtos
+    
+    fin = {
+        "receita": receita_total, 
+        "despesas": despesas_totais, 
+        "lucro": receita_total - despesas_totais
+    }
+    
+    return render_template('admin_total.html', equipe=Equipe.query.all(), produtos=produtos_db, clientes=Cliente.query.all(), fin=fin)
 
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('index'))
 
-# --- 7. INICIALIZAÇÃO E RESET (Mata o Erro 500) ---
+# --- 7. INICIALIZAÇÃO E RESET ---
 if __name__ == '__main__':
     with app.app_context():
-        # ATENÇÃO: Deixe o drop_all ativo apenas no primeiro deploy para limpar o erro
-        db.drop_all() 
+        # ATENÇÃO: Se o erro 500 persistir, DESCOMENTE a linha abaixo (remova o #), faça o deploy e depois comente novamente.
+        # db.drop_all() 
         db.create_all()
         if not Equipe.query.filter_by(usuario='wagner').first():
             db.session.add(Equipe(nome='Wagner Master', usuario='wagner', senha='123', cargo='admin', cachet=0))

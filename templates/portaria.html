@@ -25,8 +25,8 @@
                 <b style="text-transform: uppercase;">{{ c.nome }}</b><br>
                 <small style="color: #888;">{{ c.telefone }}</small>
             </div>
-            {% if not c.utilizado %}
-                <a href="/valida-portaria/{{ c.id }}" class="btn-liberar">LIBERAR</a>
+            {% if not c.na_casa %}
+                <a href="/validar-entrada/{{ c.id }}" class="btn-liberar">LIBERAR</a>
             {% else %}
                 <span style="color: #e74c3c; font-weight: bold;">DENTRO ({{ c.quem_liberou }})</span>
             {% endif %}
