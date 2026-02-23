@@ -6,7 +6,7 @@ from functools import wraps
 from datetime import datetime
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
-app.secret_key = "segredo_bafafa_2026_oficial_pro"
+app.secret_key = "segredo_bafafa_2026_AUDITORIA_FINANCEIRA"
 
 # --- BANCO DE DADOS ---
 uri = "postgresql://db_fazcomfe_user:bo24NlcJANvGehkj97PytDoNyoiT696V@dpg-d6b4mq4hncsc7386sfag-a/db_fazcomfe?sslmode=require"
@@ -17,12 +17,12 @@ db = SQLAlchemy(app)
 # --- MERCADO PAGO ---
 sdk = mercadopago.SDK("APP_USR-3244228687878580-021915-5528b1d97c9055fab65127d73dc1427d-24221819")
 
-# --- MODELOS (TABELAS) ---
+# --- MODELOS ---
 class Usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     senha = db.Column(db.String(50), nullable=False)
-    cargo = db.Column(db.String(30)) # 'admin', 'portaria', 'bar'
+    cargo = db.Column(db.String(30))
 
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -42,15 +42,26 @@ class Produto(db.Model):
     preco_venda = db.Column(db.Float, default=0.0)
     estoque_inicial = db.Column(db.Integer, default=0)
     vendido = db.Column(db.Integer, default=0)
-    imagem_local = db.Column(db.String(100)) # Pasta static/produtos/
+    imagem_local = db.Column(db.String(100))
 
-# --- INICIALIZAÇÃO E CARGA DA PLANILHA ---
+# --- FUNÇÃO DE CORREÇÃO DE BANCO (ANTI-ERRO) ---
+def corrigir_banco():
+    with app.app_context():
+        db.create_all()
+        # Adiciona colunas novas caso elas não existam (Evita o erro UndefinedColumn)
+        try:
+            db.session.execute(text("ALTER TABLE bar_produtos ADD COLUMN IF NOT EXISTS preco_custo FLOAT DEFAULT 0.0"))
+            db.session.execute(text("ALTER TABLE bar_produtos ADD COLUMN IF NOT EXISTS preco_venda FLOAT DEFAULT 0.0"))
+            db.session.execute(text("ALTER TABLE bar_produtos ADD COLUMN IF NOT EXISTS estoque_inicial INTEGER DEFAULT 0"))
+            db.session.execute(text("ALTER TABLE bar_produtos ADD COLUMN IF NOT EXISTS vendido INTEGER DEFAULT 0"))
+            db.session.commit()
+        except Exception as e:
+            print(f"Nota: {e}")
+
 with app.app_context():
-    db.create_all()
-    
-    # 1. Cadastro Automático da Planilha de Bebidas
+    corrigir_banco()
     if not Produto.query.first():
-        bebidas_oficiais = [
+        bebidas = [
             Produto(nome='Antarctica Lata (fardo 18)', imagem_local='antarctica.jpg'),
             Produto(nome='Brahma Lata (fardo 18)', imagem_local='brahma.jpg'),
             Produto(nome='Heineken 350ml (fardo 12)', imagem_local='heineken.jpg'),
@@ -62,125 +73,73 @@ with app.app_context():
             Produto(nome='Red Label (Unidade)', imagem_local='redlabel.jpg'),
             Produto(nome='Black Label (Unidade)', imagem_local='blacklabel.jpg')
         ]
-        db.session.add_all(bebidas_oficiais)
-        
-    # 2. Cadastro do Wagner (Admin)
+        db.session.add_all(bebidas)
+    
     if not Usuario.query.filter_by(username='wagner').first():
         db.session.add(Usuario(username='wagner', senha='123', cargo='admin'))
     
     db.session.commit()
 
-# --- DECORADOR DE SEGURANÇA ---
+# --- RESTANTE DO CÓDIGO (LOGIN, ADMIN, PORTARIA) ---
+
 def login_obrigatorio(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'usuario_id' not in session:
-            return redirect(url_for('login_staff'))
+        if 'usuario_id' not in session: return redirect(url_for('login_staff'))
         return f(*args, **kwargs)
     return decorated_function
-
-# --- ROTAS DE EQUIPE (LOGIN E DIRECIONAMENTO) ---
 
 @app.route('/login-staff', methods=['GET', 'POST'])
 def login_staff():
     if request.method == 'POST':
-        user = Usuario.query.filter_by(
-            username=request.form.get('username'), 
-            senha=request.form.get('senha')
-        ).first()
+        user = Usuario.query.filter_by(username=request.form.get('username'), senha=request.form.get('senha')).first()
         if user:
             session.update({'usuario_id': user.id, 'usuario_nome': user.username, 'usuario_cargo': user.cargo})
             if user.cargo == 'admin': return redirect(url_for('admin_evento'))
             if user.cargo == 'portaria': return redirect(url_for('painel_portaria'))
             if user.cargo == 'bar': return redirect(url_for('painel_barman'))
-        return "<h1>Acesso Negado!</h1>"
+        return "<h1>Credenciais Inválidas</h1>"
     return render_template('login_staff.html')
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('login_staff'))
-
-# --- PAINÉIS OPERACIONAIS ---
-
-@app.route('/painel-portaria')
-@login_obrigatorio
-def painel_portaria():
-    if session['usuario_cargo'] not in ['portaria', 'admin']: return redirect(url_for('login_staff'))
-    clientes = Cliente.query.order_by(Cliente.id.desc()).all()
-    return render_template('portaria.html', clientes=clientes)
-
-@app.route('/painel-barman')
-@login_obrigatorio
-def painel_barman():
-    if session['usuario_cargo'] not in ['bar', 'admin']: return redirect(url_for('login_staff'))
-    produtos = Produto.query.all()
-    return render_template('gestao_bar.html', produtos=produtos)
-
-@app.route('/valida-portaria/<int:id>')
-@login_obrigatorio
-def valida_portaria(id):
-    c = Cliente.query.get_or_404(id)
-    if c.utilizado:
-        return f"<h1>ERRO: JÁ ENTROU!</h1><p>Liberado por {c.quem_liberou} em {c.data_entrada.strftime('%H:%M')}</p>"
-    c.utilizado, c.pago, c.quem_liberou, c.data_entrada = True, True, session['usuario_nome'], datetime.now()
-    db.session.commit()
-    return render_template('recepcao.html', c=c)
-
-# --- ADMINISTRAÇÃO FINANCEIRA (SEU CONTROLE) ---
 
 @app.route('/admin/evento', methods=['GET', 'POST'])
 @login_obrigatorio
 def admin_evento():
-    if session['usuario_cargo'] != 'admin': return "Acesso Restrito"
-    
+    if session['usuario_cargo'] != 'admin': return "Acesso Negado"
     if request.method == 'POST':
-        if 'id_prod' in request.form: # Editar Planilha (Custo/Venda/Estoque)
+        if 'id_prod' in request.form:
             p = Produto.query.get(request.form.get('id_prod'))
             p.preco_custo = float(request.form.get('custo'))
             p.preco_venda = float(request.form.get('venda'))
             p.estoque_inicial = int(request.form.get('estoque'))
-        elif 'new_user' in request.form: # Cadastrar novo Staff
+        elif 'new_user' in request.form:
             db.session.add(Usuario(username=request.form.get('username'), senha=request.form.get('senha'), cargo=request.form.get('cargo')))
         db.session.commit()
         return redirect(url_for('admin_evento'))
-
-    produtos = Produto.query.all()
-    custo_geral = sum([p.preco_custo * p.estoque_inicial for p in produtos])
-    lucro_previsto = sum([(p.preco_venda - p.preco_custo) * p.estoque_inicial for p in produtos])
     
-    return render_template('admin_bar.html', produtos=produtos, custo_total=custo_geral, lucro=lucro_previsto, clientes=Cliente.query.all(), staff=Usuario.query.all())
+    produtos = Produto.query.all()
+    custo_estoque = sum([p.preco_custo * p.estoque_inicial for p in produtos])
+    venda_total = sum([p.preco_venda * p.vendido for p in produtos])
+    lucro = sum([(p.preco_venda - p.preco_custo) * p.vendido for p in produtos])
+    return render_template('admin_bar.html', produtos=produtos, custo_total=custo_estoque, faturamento=venda_total, lucro=lucro, clientes=Cliente.query.all(), staff=Usuario.query.all())
 
-# --- FLUXO DO CLIENTE (MANTIDO) ---
+# --- MANTENHA AS OUTRAS ROTAS IGUAIS (INDEX, PAGAMENTO, ETC) ---
 
 @app.route('/')
-def index():
-    return render_template('index.html', preco=45.0)
+def index(): return render_template('index.html', preco=45.0)
 
 @app.route('/reservar', methods=['POST'])
 def reservar():
-    nome = request.form.get('nome', '').upper().strip()
-    tel = re.sub(r"\D", "", request.form.get('telefone', ''))
-    c = Cliente.query.filter_by(telefone=tel).first()
-    if not c:
-        c = Cliente(nome=nome, telefone=tel)
-        db.session.add(c)
-        db.session.commit()
+    c = Cliente(nome=request.form.get('nome').upper().strip(), telefone=re.sub(r"\D", "", request.form.get('telefone')))
+    db.session.add(c); db.session.commit()
     return redirect(url_for('pagamento', id=c.id))
 
 @app.route('/pagamento/<int:id>')
 def pagamento(id):
     c = Cliente.query.get_or_404(id)
-    pay_data = {
-        "transaction_amount": 45.0,
-        "description": f"Bafafá - {c.nome}",
-        "payment_method_id": "pix",
-        "payer": {"email": "wagnerzaparolli15@gmail.com"}
-    }
+    pay_data = {"transaction_amount": 45.0, "description": f"Bafafá - {c.nome}", "payment_method_id": "pix", "payer": {"email": "wagnerzaparolli15@gmail.com"}}
     result = sdk.payment().create(pay_data)
     pix = result["response"]["point_of_interaction"]["transaction_data"]
-    c.payment_id = str(result["response"]["id"])
-    db.session.commit()
+    c.payment_id = str(result["response"]["id"]); db.session.commit()
     return render_template('pagamento.html', c=c, pix_codigo=pix["qr_code"], qrcode_base64=pix["qr_code_base64"])
 
 @app.route('/ingresso/<int:id>')
@@ -189,6 +148,20 @@ def validar_ingresso(id):
     url = f"https://evento-samba.onrender.com/valida-portaria/{c.id}"
     return render_template('obrigado.html', c=c, checkin_url=url)
 
+@app.route('/painel-portaria')
+@login_obrigatorio
+def painel_portaria():
+    return render_template('portaria.html', clientes=Cliente.query.order_by(Cliente.id.desc()).all())
+
+@app.route('/painel-barman')
+@login_obrigatorio
+def painel_barman():
+    return render_template('gestao_bar.html', produtos=Produto.query.all())
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login_staff'))
+
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
