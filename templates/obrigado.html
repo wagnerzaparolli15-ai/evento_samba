@@ -2,9 +2,16 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Seu Ingresso - Pagode do Cara</title>
+    <title>Seu Ingresso - Bafafá</title>
     <style>
-        body { background: #000 url('/static/fundo.jpg'); background-size: cover; color: white; font-family: sans-serif; text-align: center; padding: 20px; }
+        body { 
+            background: #000 url("{{ url_for('static', filename='fundo.jpg') }}") no-repeat center center fixed; 
+            background-size: cover; 
+            color: white; 
+            font-family: sans-serif; 
+            text-align: center; 
+            padding: 20px; 
+        }
         .ticket { background: #fff; color: #000; max-width: 320px; margin: 20px auto; padding: 20px; border-radius: 15px; border: 4px solid #f1c40f; }
     </style>
 </head>
@@ -13,9 +20,7 @@
     <div class="ticket">
         <h3 style="text-transform: uppercase;">{{ nome }}</h3>
         <p style="background:#000; color:#f1c40f; padding:5px; font-weight: bold;">INGRESSO + FEIJOADA 🍲</p>
-        
         <img src="https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl={{ checkin_url }}&choe=UTF-8">
-        
         <p>Reserva #{{ id_reserva }}</p>
         <small>Apresente este código na entrada.</small>
     </div>
