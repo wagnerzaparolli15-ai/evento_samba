@@ -3,7 +3,7 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 
-# CONFIGURAÇÃO DE IMAGENS: Agora o Flask vai ler sua pasta static corretamente
+# CONFIGURAÇÃO DE IMAGENS: Agora o Flask vai ler a pasta static corretamente
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
 # --- BANCO DE DADOS ---
@@ -59,13 +59,21 @@ def validar_ingresso(id):
     checkin_url = f"https://evento-samba.onrender.com/checkin/{c.id}"
     return render_template('obrigado.html', nome=c.nome, id_reserva=c.id, checkin_url=checkin_url)
 
+@app.route('/checkin/<int:id>')
+def checkin(id):
+    c = Cliente.query.get_or_404(id)
+    c.utilizado = True # Aqui libera o acesso ao bar
+    c.pago = True
+    db.session.commit()
+    return render_template('recepcao.html', c=c)
+
 @app.route('/admin/reset-total')
 def reset_total():
     db.session.execute(text("DROP TABLE IF EXISTS bar_produtos CASCADE;"))
     db.session.execute(text("DROP TABLE IF EXISTS cliente CASCADE;"))
     db.session.commit()
     db.create_all()
-    return "<h1>Sucesso! O Bafafá está limpo e as tabelas foram recriadas.</h1>"
+    return "<h1>Sucesso! Sistema limpo.</h1><a href='/'>Voltar</a>"
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
