@@ -2,55 +2,129 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Master Admin - Bafafá</title>
     <style>
-        body { background: #121212; color: white; font-family: sans-serif; padding: 20px; }
-        .secao { background: #1a1a1a; padding: 20px; border-radius: 10px; margin-bottom: 25px; border: 1px solid #f1c40f; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px; border-bottom: 1px solid #333; text-align: left; }
-        .btn { background: #f1c40f; color: black; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        input, select { padding: 8px; border-radius: 5px; border: 1px solid #333; background: #000; color: white; margin: 5px; }
+        body { background: #121212; color: white; font-family: 'Segoe UI', sans-serif; padding: 20px; margin: 0; }
+        .container { max-width: 1000px; margin: auto; }
+        .secao { background: #1a1a1a; padding: 25px; border-radius: 15px; margin-bottom: 25px; border: 1px solid #333; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .header-admin { color: #f1c40f; text-align: center; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 2px; }
+        
+        /* Dashboard Financeiro */
+        .grid-fin { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .card-fin { padding: 20px; border-radius: 10px; text-align: center; border: 1px solid #444; }
+        .val { font-size: 24px; font-weight: bold; display: block; margin-top: 5px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #111; border-radius: 10px; overflow: hidden; }
+        th { background: #333; color: #f1c40f; padding: 12px; text-align: left; }
+        td { padding: 12px; border-bottom: 1px solid #222; }
+        
+        .btn { background: #f1c40f; color: black; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn:hover { background: #d4ac0d; transform: scale(1.05); }
+        
+        input, select { padding: 10px; border-radius: 5px; border: 1px solid #333; background: #000; color: white; margin: 5px 0; width: 100%; box-sizing: border-box; }
+        .form-inline { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; align-items: end; }
+        
+        .badge { padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+        .badge-pago { background: #27ae60; color: white; }
+        .badge-pendente { background: #e67e22; color: white; }
     </style>
 </head>
 <body>
-    <h1 style="color: #f1c40f; text-align: center;">CENTRAL DE CONTROLE BAF AFÁ 🎷</h1>
+    <div class="container">
+        <h1 class="header-admin">🎷 Central de Inteligência Bafafá</h1>
 
-    <div class="secao">
-        <h2>👥 CADASTRAR FUNCIONÁRIO (Todos os setores)</h2>
-        <form method="POST">
-            <input type="hidden" name="novo_staff" value="1">
-            <input type="text" name="nome" placeholder="Nome Completo" required>
-            <input type="text" name="user" placeholder="Login de Acesso" required>
-            <input type="password" name="pass" placeholder="Senha" required>
-            <select name="cargo">
-                <option value="portaria">Segurança / Portaria</option>
-                <option value="bar">Gerente de Bar / Barman</option>
-                <option value="musico">Músico / Banda</option>
-                <option value="limpeza">Equipe de Limpeza</option>
-                <option value="carregador">Carregador / Montagem</option>
-                <option value="admin">Administrador Master</option>
-            </select>
-            <button type="submit" class="btn">CRIAR ACESSO</button>
-        </form>
-    </div>
+        <div class="secao" style="border-color: #f1c40f;">
+            <h2>💰 Contabilidade do Evento</h2>
+            <div class="grid-fin">
+                <div class="card-fin">RECEITA BRUTA<span class="val" style="color: #2ecc71;">R$ {{ "%.2f"|format(fin.receita) }}</span></div>
+                <div class="card-fin">CUSTO EQUIPE<span class="val" style="color: #e74c3c;">R$ {{ "%.2f"|format(fin.despesas) }}</span></div>
+                <div class="card-fin" style="background: #222;">LUCRO LÍQUIDO<span class="val" style="color: #f1c40f;">R$ {{ "%.2f"|format(fin.lucro) }}</span></div>
+            </div>
+        </div>
 
-    <div class="secao">
-        <h2>🍺 GESTÃO DE ESTOQUE E PREÇOS</h2>
-        <table>
-            <tr><th>Item</th><th>Custo</th><th>Venda</th><th>Qtd</th><th>Ação</th></tr>
-            {% for p in produtos %}
-            <tr>
-                <form method="POST">
-                    <input type="hidden" name="id_prod" value="{{ p.id }}">
-                    <td>{{ p.nome }}</td>
-                    <td><input type="number" step="0.01" name="custo" value="{{ p.preco_custo }}" style="width: 70px;"></td>
-                    <td><input type="number" step="0.01" name="venda" value="{{ p.preco_venda }}" style="width: 70px;"></td>
-                    <td><input type="number" name="estoque" value="{{ p.estoque }}" style="width: 50px;"></td>
-                    <td><button type="submit" class="btn">💾</button></td>
-                </form>
-            </tr>
-            {% endfor %}
-        </table>
+        <div class="secao">
+            <h2>👥 Cadastro de Staff & Cachets</h2>
+            <form method="POST" class="form-inline">
+                <input type="hidden" name="novo_staff" value="1">
+                <div><label>Nome</label><input type="text" name="nome" placeholder="Nome do Staff" required></div>
+                <div><label>Setor</label>
+                    <select name="cargo">
+                        <option value="barman">Barman / Bar</option>
+                        <option value="seguranca">Segurança</option>
+                        <option value="musico">Músico / DJ</option>
+                        <option value="limpeza">Limpeza</option>
+                        <option value="staff">Equipe de Apoio</option>
+                        <option value="admin">Admin Master</option>
+                    </select>
+                </div>
+                <div><label>Cachet (R$)</label><input type="number" step="0.01" name="cachet" placeholder="0.00" required></div>
+                <div><label>Login</label><input type="text" name="user" required></div>
+                <div><label>Senha</label><input type="password" name="pass" required></div>
+                <button type="submit" class="btn">ADICIONAR</button>
+            </form>
+
+            <table>
+                <thead>
+                    <tr><th>Nome</th><th>Função</th><th>Pagamento</th></tr>
+                </thead>
+                <tbody>
+                    {% for s in equipe %}
+                    <tr>
+                        <td>{{ s.nome }}</td>
+                        <td><small>{{ s.cargo }}</small></td>
+                        <td style="color: #e74c3c;">R$ {{ "%.2f"|format(s.cachet) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="secao">
+            <h2>🍺 Almoxarifado e Preços</h2>
+            <table>
+                <thead>
+                    <tr><th>Produto</th><th>Custo un.</th><th>Venda un.</th><th>Estoque</th><th>Salvar</th></tr>
+                </thead>
+                <tbody>
+                    {% for p in produtos %}
+                    <tr>
+                        <form method="POST">
+                            <input type="hidden" name="id_prod" value="{{ p.id }}">
+                            <td>{{ p.nome }}</td>
+                            <td><input type="number" step="0.01" name="custo" value="{{ p.preco_custo }}" style="width: 80px;"></td>
+                            <td><input type="number" step="0.01" name="venda" value="{{ p.preco_venda }}" style="width: 80px;"></td>
+                            <td><input type="number" name="estoque" value="{{ p.estoque }}" style="width: 60px;"></td>
+                            <td><button type="submit" class="btn">💾</button></td>
+                        </form>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="secao">
+            <h2>🎟️ Fluxo de Clientes (Portaria)</h2>
+            <table>
+                <thead>
+                    <tr><th>Cliente</th><th>Status</th><th>Local</th></tr>
+                </thead>
+                <tbody>
+                    {% for c in clientes %}
+                    <tr>
+                        <td>{{ c.nome }}</td>
+                        <td>
+                            {% if c.pago %}<span class="badge badge-pago">PAGO</span>
+                            {% else %}<span class="badge badge-pendente">AGUARDANDO</span>{% endif %}
+                        </td>
+                        <td>{% if c.na_casa %}✅ Dentro{% else %}❌ Fora{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <p style="text-align: center; color: #444;">Sistema Bafafá v2.0 - Gestão Digital de Eventos Físicos</p>
     </div>
 </body>
 </html>

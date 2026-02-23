@@ -4,31 +4,32 @@ from flask_sqlalchemy import SQLAlchemy
 from functools import wraps
 
 app = Flask(__name__)
-app.secret_key = "BAFAFA_SISTEMA_MASTER_2026"
+app.secret_key = "SISTEMA_BAFAFA_2026_TOTAL"
 
-# --- BANCO DE DADOS ---
+# --- 1. CONFIGURAÇÃO DO BANCO DE DADOS ---
 uri = "postgresql://db_fazcomfe_user:bo24NlcJANvGehkj97PytDoNyoiT696V@dpg-d6b4mq4hncsc7386sfag-a/db_fazcomfe?sslmode=require"
 app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# --- MERCADO PAGO ---
+# --- 2. CONFIGURAÇÃO MERCADO PAGO ---
 sdk = mercadopago.SDK("APP_USR-3244228687878580-021915-5528b1d97c9055fab65127d73dc1427d-24221819")
 
-# --- MODELOS ---
+# --- 3. MODELOS DE DADOS ---
 class Equipe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100))
     usuario = db.Column(db.String(50), unique=True)
     senha = db.Column(db.String(50))
-    cargo = db.Column(db.String(30)) 
+    cargo = db.Column(db.String(30)) # admin, barman, seguranca, musico, etc.
+    cachet = db.Column(db.Float, default=0.0)
 
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100))
     telefone = db.Column(db.String(20))
     pago = db.Column(db.Boolean, default=False)
-    na_casa = db.Column(db.Boolean, default=False) 
+    na_casa = db.Column(db.Boolean, default=False)
     payment_id = db.Column(db.String(100))
 
 class Produto(db.Model):
@@ -37,75 +38,68 @@ class Produto(db.Model):
     preco_custo = db.Column(db.Float, default=0.0)
     preco_venda = db.Column(db.Float, default=0.0)
     estoque = db.Column(db.Integer, default=0)
+    vendidos = db.Column(db.Integer, default=0)
 
-# --- FLUXO DO CLIENTE ---
+# --- 4. FLUXO DE VENDA E QR CODE PIX ---
 @app.route('/')
 def index(): 
     return render_template('index.html')
 
 @app.route('/reservar', methods=['POST'])
 def reservar():
-    try:
-        nome = request.form.get('nome').upper().strip()
-        telefone = re.sub(r"\D", "", request.form.get('telefone', ''))
-        c = Cliente(nome=nome, telefone=telefone)
-        db.session.add(c)
-        db.session.commit()
-        return redirect(url_for('pagamento', id=c.id))
-    except:
-        return "Erro no banco. Tente novamente em 1 minuto (o sistema está resetando)."
+    nome = request.form.get('nome').upper().strip()
+    tel = request.form.get('telefone')
+    c = Cliente(nome=nome, telefone=tel)
+    db.session.add(c)
+    db.session.commit()
+    return redirect(url_for('pagamento', id=c.id))
 
 @app.route('/pagamento/<int:id>')
 def pagamento(id):
     c = Cliente.query.get_or_404(id)
-    try:
-        pay_data = {"transaction_amount": 45.0, "description": f"Bafafá - {c.nome}", "payment_method_id": "pix", "payer": {"email": "wagnerzaparolli15@gmail.com"}}
-        result = sdk.payment().create(pay_data)
-        pix = result["response"]["point_of_interaction"]["transaction_data"]
-        c.payment_id = str(result["response"]["id"])
-        db.session.commit()
-        return render_template('pagamento.html', c=c, pix_codigo=pix["qr_code"], qrcode_base64=pix["qr_code_base64"])
-    except:
-        return "Erro ao gerar PIX. Verifique sua conta Mercado Pago."
+    payment_data = {
+        "transaction_amount": 45.0,
+        "description": "Ingresso Bafafá",
+        "payment_method_id": "pix",
+        "payer": {"email": "vendas@bafafa.com"}
+    }
+    payment_response = sdk.payment().create(payment_data)
+    payment = payment_response["response"]
+    
+    c.payment_id = str(payment["id"])
+    db.session.commit()
+    
+    return render_template('pagamento.html', 
+                           c=c, 
+                           pix_codigo=payment["point_of_interaction"]["transaction_data"]["qr_code"], 
+                           qrcode_base64=payment["point_of_interaction"]["transaction_data"]["qr_code_base64"])
 
+# --- 5. VALIDAÇÃO DE ACESSO ---
 @app.route('/ingresso/<int:id>')
 def ingresso(id):
     c = Cliente.query.get_or_404(id)
     if not c.pago:
-        try:
-            status = sdk.payment().get(c.payment_id)["response"]["status"]
-            if status == "approved":
-                c.pago = True
-                db.session.commit()
-            else:
-                return render_template('templates-feedback.html', id=id)
-        except:
+        res = sdk.payment().get(c.payment_id)
+        if res["response"]["status"] == "approved":
+            c.pago = True
+            db.session.commit()
+        else:
             return render_template('templates-feedback.html', id=id)
-    checkin_url = f"https://evento-samba.onrender.com/validar-entrada/{c.id}"
+    
+    checkin_url = url_for('validar_entrada', id=c.id, _external=True)
     return render_template('obrigado.html', c=c, checkin_url=checkin_url)
 
-# --- GESTÃO ---
+# --- 6. AMBIENTES VIRTUAIS (PORTARIA E BAR) ---
 @app.route('/login-staff', methods=['GET', 'POST'])
 def login_staff():
     if request.method == 'POST':
-        f = Equipe.query.filter_by(usuario=request.form.get('username'), senha=request.form.get('password')).first()
+        u = request.form.get('username')
+        s = request.form.get('senha')
+        f = Equipe.query.filter_by(usuario=u, senha=s).first()
         if f:
-            session.update({'staff_id': f.id, 'cargo': f.cargo, 'usuario_nome': f.nome})
+            session.update({'staff_id': f.id, 'cargo': f.cargo, 'nome': f.nome})
             return redirect(url_for('admin_total' if f.cargo == 'admin' else 'portaria'))
     return render_template('login_staff.html')
-
-@app.route('/admin_total', methods=['GET', 'POST'])
-def admin_total():
-    if request.method == 'POST':
-        if 'id_prod' in request.form:
-            p = Produto.query.get(request.form.get('id_prod'))
-            p.preco_custo, p.preco_venda, p.estoque = float(request.form.get('custo')), float(request.form.get('venda')), int(request.form.get('estoque'))
-        db.session.commit()
-    return render_template('admin_total.html', produtos=Produto.query.all(), equipe=Equipe.query.all(), clientes=Cliente.query.all())
-
-@app.route('/portaria')
-def portaria():
-    return render_template('portaria.html', clientes=Cliente.query.filter_by(pago=True).all())
 
 @app.route('/validar-entrada/<int:id>')
 def validar_entrada(id):
@@ -114,19 +108,33 @@ def validar_entrada(id):
     db.session.commit()
     return render_template('recepcao.html', c=c)
 
-@app.route('/bar-digital/<int:id>')
-def bar_digital(id):
-    c = Cliente.query.get_or_404(id)
-    if not c.na_casa: return "Acesso negado."
-    return render_template('gestao_bar.html', produtos=Produto.query.all())
+@app.route('/admin_total', methods=['GET', 'POST'])
+def admin_total():
+    if session.get('cargo') != 'admin': return redirect(url_for('login_staff'))
+    
+    if request.method == 'POST':
+        if 'novo_staff' in request.form:
+            e = Equipe(nome=request.form.get('nome'), usuario=request.form.get('user'), 
+                       senha=request.form.get('pass'), cargo=request.form.get('cargo'),
+                       cachet=float(request.form.get('cachet') or 0))
+            db.session.add(e)
+        if 'id_prod' in request.form:
+            p = Produto.query.get(request.form.get('id_prod'))
+            p.preco_custo, p.preco_venda, p.estoque = float(request.form.get('custo')), float(request.form.get('venda')), int(request.form.get('estoque'))
+        db.session.commit()
+
+    # Contabilidade Consolidada
+    venda_ingressos = db.session.query(db.func.count(Cliente.id)).filter(Cliente.pago == True).scalar() * 45.0
+    venda_bar = sum([p.preco_venda * p.vendidos for p in Produto.query.all()])
+    custo_equipe = db.session.query(db.func.sum(Equipe.cachet)).scalar() or 0
+    
+    fin = {"receita": venda_ingressos + venda_bar, "despesas": custo_equipe, "lucro": (venda_ingressos + venda_bar) - custo_equipe}
+    return render_template('admin_total.html', equipe=Equipe.query.all(), produtos=Produto.query.all(), clientes=Cliente.query.all(), fin=fin)
 
 if __name__ == '__main__':
     with app.app_context():
-        # ESTA LINHA É O REMÉDIO: Ela apaga a tabela velha e cria a nova com a coluna 'na_casa'
-        db.drop_all() 
         db.create_all()
-        
         if not Equipe.query.filter_by(usuario='wagner').first():
-            db.session.add(Equipe(nome='Wagner', usuario='wagner', senha='123', cargo='admin'))
+            db.session.add(Equipe(nome='Wagner', usuario='wagner', senha='123', cargo='admin', cachet=0))
             db.session.commit()
     app.run(host='0.0.0.0', port=10000)
