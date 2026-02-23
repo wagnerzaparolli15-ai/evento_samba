@@ -20,7 +20,17 @@ class Cliente(db.Model):
     telefone = db.Column(db.String(20), unique=True)
     pago = db.Column(db.Boolean, default=False)
     utilizado = db.Column(db.Boolean, default=False)
-    payment_id = db.Column(db.String(100)) # SALVA O ID DO PIX AQUI
+    payment_id = db.Column(db.String(100))
+
+class Produto(db.Model):
+    __tablename__ = 'bar_produtos'
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(100), nullable=False)
+    preco = db.Column(db.Float, nullable=False)
+    preco_custo = db.Column(db.Float, default=0.0)
+    estoque = db.Column(db.Integer, default=0)
+    imagem_url = db.Column(db.String(500))
+    ativo = db.Column(db.Boolean, default=True)
 
 with app.app_context():
     db.create_all()
@@ -28,6 +38,25 @@ with app.app_context():
 @app.route('/')
 def index():
     return render_template('index.html', preco=45.0)
+
+# ROTA DE ADMIN QUE ESTAVA DANDO ERRO 404
+@app.route('/admin/bar/produtos', methods=['GET', 'POST'])
+def admin_bar_produtos():
+    if request.method == 'POST':
+        p = Produto(
+            nome=request.form.get('nome'),
+            preco=float(request.form.get('preco_venda')),
+            preco_custo=float(request.form.get('preco_custo')),
+            estoque=int(request.form.get('estoque')),
+            imagem_url=request.form.get('imagem_url')
+        )
+        db.session.add(p)
+        db.session.commit()
+        return redirect(url_for('admin_bar_produtos'))
+    
+    produtos = Produto.query.all()
+    clientes = Cliente.query.order_by(Cliente.id.desc()).all()
+    return render_template('admin_bar.html', produtos=produtos, clientes=clientes)
 
 @app.route('/reservar', methods=['POST'])
 def reservar():
@@ -51,38 +80,19 @@ def pagamento(id):
     }
     result = sdk.payment().create(pay_data)
     pix = result["response"]["point_of_interaction"]["transaction_data"]
-    
-    # SALVA O ID DO PAGAMENTO PARA CONSULTAR DEPOIS
     c.payment_id = str(result["response"]["id"])
     db.session.commit()
-    
     return render_template('pagamento.html', c=c, pix_codigo=pix["qr_code"], qrcode_base64=pix["qr_code_base64"])
-
-# ROTA QUE O MERCADO PAGO CHAMA PARA AVISAR QUE PAGOU
-@app.route('/notificar', methods=['POST'])
-def notificar():
-    payment_id = request.args.get('data.id') or request.json.get('data', {}).get('id')
-    if payment_id:
-        info = sdk.payment().get(payment_id)
-        if info["response"]["status"] == "approved":
-            c = Cliente.query.filter_by(payment_id=str(payment_id)).first()
-            if c:
-                c.pago = True
-                db.session.commit()
-    return "OK", 200
 
 @app.route('/ingresso/<int:id>')
 def validar_ingresso(id):
     c = Cliente.query.get_or_404(id)
-    
-    # VERIFICAÇÃO ATIVA: Pergunta ao Mercado Pago antes de abrir
     if not c.pago and c.payment_id:
         info = sdk.payment().get(c.payment_id)
         if info["response"]["status"] == "approved":
             c.pago = True
             db.session.commit()
         else:
-            # Se não pagou, ele manda para uma tela de espera
             return render_template('templates-feedback.html', tipo='aguardando')
     
     checkin_url = f"https://evento-samba.onrender.com/checkin/{c.id}"
@@ -94,7 +104,7 @@ def checkin(id):
     c.utilizado = True
     c.pago = True
     db.session.commit()
-    return render_template('recepcao.html', c=c)
+    return redirect(url_for('admin_bar_produtos'))
 
 @app.route('/admin/reset-total')
 def reset_total():
