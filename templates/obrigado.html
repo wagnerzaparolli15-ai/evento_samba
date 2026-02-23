@@ -4,22 +4,19 @@
     <meta charset="UTF-8">
     <title>Seu Ingresso - Bafafá</title>
     <style>
-        body { 
-            background: #000 url("{{ url_for('static', filename='fundo.jpg') }}") no-repeat center center fixed; 
-            background-size: cover; 
-            color: white; font-family: sans-serif; text-align: center; padding: 20px; 
-        }
-        .ticket { background: #fff; color: #000; max-width: 320px; margin: 20px auto; padding: 20px; border-radius: 15px; border: 4px solid #f1c40f; }
+        body { background: #000 url("/static/fundo.jpg") no-repeat center center fixed; background-size: cover; color: white; font-family: sans-serif; text-align: center; padding: 20px; }
+        .ticket { background: #fff; color: #000; max-width: 320px; margin: 20px auto; padding: 20px; border-radius: 15px; border: 5px solid #f1c40f; }
     </style>
 </head>
 <body>
-    <h1 style="color:#f1c40f">INGRESSO CONFIRMADO!</h1>
     <div class="ticket">
-        <h3 style="text-transform: uppercase;">{{ nome }}</h3>
-        <p style="background:#000; color:#f1c40f; padding:5px; font-weight: bold;">INGRESSO + FEIJOADA 🍲</p>
-        <img src="https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl={{ checkin_url }}&choe=UTF-8">
-        <p>Reserva #{{ id_reserva }}</p>
-        <small>Apresente este código na entrada.</small>
+        <img src="/static/logo.jpg" style="width: 80px; margin-bottom: 10px;">
+        <h2 style="margin:0;">INGRESSO + FEIJOADA</h2>
+        <p><strong>{{ c.nome }}</strong></p>
+        <hr>
+        <p>Apresente este código ao segurança na portaria:</p>
+        <img src="https://chart.googleapis.com/chart?chs=220x220&cht=qr&chl={{ checkin_url }}&choe=UTF-8">
+        <p><small>Válido para entrada individual</small></p>
     </div>
 </body>
 </html>

@@ -2,20 +2,20 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seu Ingresso</title>
+    <title>Bem-vindo ao Bafafá</title>
     <style>
-        body { background: #1a1a1a; color: white; text-align: center; font-family: sans-serif; padding: 50px 20px; }
-        .ingresso { border: 2px dashed #ffc107; padding: 30px; border-radius: 15px; }
-        .status { color: #28a745; font-size: 1.5em; font-weight: bold; }
+        body { background: #121212; color: white; font-family: sans-serif; text-align: center; padding: 50px 20px; }
+        .success-box { border: 3px solid #2ecc71; padding: 30px; border-radius: 20px; display: inline-block; }
+        .btn-bar { display: inline-block; background: #f1c40f; color: black; padding: 20px 40px; border-radius: 10px; text-decoration: none; font-weight: bold; margin-top: 30px; font-size: 20px; }
     </style>
 </head>
 <body>
-    <div class="ingresso">
-        <h1>Bafafá do CARA</h1>
-        <p>Convidado: <strong>{{ c.nome }}</strong></p>
-        <p class="status">PAGAMENTO CONFIRMADO ✅</p>
-        <p>Apresente esta tela na entrada para liberar o seu acesso ao BAR.</p>
+    <div class="success-box">
+        <h1 style="color: #2ecc71;">✅ ENTRADA LIBERADA!</h1>
+        <p>Olá, <strong>{{ c.nome }}</strong>. Sua feijoada já está garantida!</p>
+        <hr>
+        <p>Para comprar bebidas e combos, clique no botão abaixo para abrir seu cardápio digital:</p>
+        <a href="/bar/{{ c.id }}" class="btn-bar">ABRIR BAR DIGITAL 🍺</a>
     </div>
 </body>
 </html>
