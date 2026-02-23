@@ -70,7 +70,6 @@ def pagamento(id):
 @app.route('/ingresso/<int:id>')
 def validar_ingresso(id):
     c = Cliente.query.get_or_404(id)
-    # VERIFICAÇÃO REAL COM MERCADO PAGO
     if not c.pago and c.payment_id:
         info = sdk.payment().get(c.payment_id)
         if info["response"].get("status") == "approved":
@@ -82,7 +81,7 @@ def validar_ingresso(id):
     checkin_url = f"https://evento-samba.onrender.com/checkin/{c.id}"
     return render_template('obrigado.html', nome=c.nome, id_reserva=c.id, checkin_url=checkin_url)
 
-# --- ROTAS DE ADMIN E BAR ---
+# --- ROTAS DE ADMINISTRAÇÃO ---
 @app.route('/admin/bar/produtos', methods=['GET', 'POST'])
 def admin_bar_produtos():
     if request.method == 'POST':
@@ -103,10 +102,10 @@ def admin_bar_produtos():
 @app.route('/checkin/<int:id>')
 def checkin(id):
     c = Cliente.query.get_or_404(id)
-    c.utilizado = True
     c.pago = True
+    c.utilizado = True
     db.session.commit()
-    return render_template('recepcao.html', c=c)
+    return redirect(url_for('admin_bar_produtos'))
 
 @app.route('/admin/reset-total')
 def reset_total():
@@ -114,7 +113,7 @@ def reset_total():
     db.session.execute(text("DROP TABLE IF EXISTS cliente CASCADE;"))
     db.session.commit()
     db.create_all()
-    return "<h1>Sucesso! Sistema limpo.</h1><a href='/'>Voltar</a>"
+    return "<h1>Sucesso! Sistema recriado.</h1><a href='/admin/bar/produtos'>Voltar</a>"
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))

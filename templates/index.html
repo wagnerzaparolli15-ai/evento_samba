@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Bafafá - Ingressos</title>
+    <title>Ingressos - Bafafá</title>
     <style>
         body { 
             background: #000 url("{{ url_for('static', filename='fundo.jpg') }}") no-repeat center center fixed; 
@@ -24,7 +24,7 @@
         <form action="/reservar" method="POST">
             <input type="text" name="nome" placeholder="Nome Completo" required>
             <input type="tel" name="telefone" placeholder="WhatsApp com DDD" required>
-            <button type="submit">GERAR PIX AGORA</button>
+            <button type="submit">GERAR PIX</button>
         </form>
     </div>
 </body>

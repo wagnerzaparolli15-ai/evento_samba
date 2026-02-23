@@ -2,45 +2,58 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Admin - Bafafá</title>
+    <title>Portaria & Bar Bafafá</title>
     <style>
-        body { background: #1a1a1a; color: white; font-family: sans-serif; padding: 20px; }
-        .card { background: #2d2d2d; padding: 15px; margin-bottom: 20px; border-radius: 10px; border: 1px solid #f1c40f; }
+        body { background: #121212; color: white; font-family: sans-serif; padding: 20px; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #f1c40f; margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 10px; border-bottom: 1px solid #444; text-align: left; }
-        .btn { background: #28a745; color: white; padding: 8px 15px; border: none; cursor: pointer; text-decoration: none; border-radius: 5px; font-weight: bold; }
-        input { padding: 8px; margin: 5px; border-radius: 5px; border: 1px solid #444; background: #333; color: white; }
+        th, td { padding: 12px; border-bottom: 1px solid #333; text-align: left; }
+        .btn { padding: 10px 20px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; text-decoration: none; display: inline-block; }
+        .btn-green { background: #2ecc71; color: white; }
+        .btn-yellow { background: #f1c40f; color: black; }
+        .status-ok { color: #2ecc71; font-weight: bold; }
+        input { padding: 10px; background: #222; border: 1px solid #444; color: white; border-radius: 5px; margin: 5px; width: 150px; }
     </style>
 </head>
 <body>
-    <h2>📊 Painel de Controle - Bafafá</h2>
+    <h2>🚀 Portaria & Gestão de Bar</h2>
+    
     <div class="card">
-        <h3>➕ Adicionar Produto ao Bar</h3>
-        <form method="POST">
-            <input type="text" name="nome" placeholder="Nome" required>
-            <input type="number" step="0.01" name="preco_venda" placeholder="Preço Venda" required>
-            <input type="number" step="0.01" name="preco_custo" placeholder="Preço Custo" required>
-            <input type="number" name="estoque" placeholder="Qtd" required>
-            <input type="text" name="imagem_url" placeholder="Link da Foto">
-            <button type="submit" class="btn">SALVAR PRODUTO</button>
-        </form>
-    </div>
-    <div class="card">
-        <h3>👥 Check-in de Convidados</h3>
+        <h3>👥 Lista de Presença (Check-in)</h3>
         <table>
-            <tr><th>Nome</th><th>Status</th><th>Ação</th></tr>
+            <tr><th>Convidado</th><th>Pagamento</th><th>Ação</th></tr>
             {% for c in clientes %}
             <tr>
                 <td>{{ c.nome }}</td>
-                <td>{{ "✅ NO BAR" if c.utilizado else "⏳ AGUARDANDO" }}</td>
+                <td>
+                    {% if c.utilizado %}
+                        <span class="status-ok">✅ NO BAR / PAGO</span>
+                    {% else %}
+                        <span style="color: #e67e22;">⏳ AGUARDANDO</span>
+                    {% endif %}
+                </td>
                 <td>
                     {% if not c.utilizado %}
-                    <a href="{{ url_for('checkin', id=c.id) }}" class="btn" style="background:#f1c40f; color:black;">LIBERAR ACESSO</a>
+                        <a href="{{ url_for('checkin', id=c.id) }}" class="btn btn-yellow">LIBERAR AGORA</a>
+                    {% else %}
+                        <span class="btn" style="background: #333; color: #666; cursor: default;">VALIDADO</span>
                     {% endif %}
                 </td>
             </tr>
             {% endfor %}
         </table>
+    </div>
+
+    <div class="card">
+        <h3>➕ Cadastrar Produto</h3>
+        <form method="POST">
+            <input type="text" name="nome" placeholder="Produto" required>
+            <input type="number" step="0.01" name="preco_venda" placeholder="Venda R$" required>
+            <input type="number" step="0.01" name="preco_custo" placeholder="Custo R$" required>
+            <input type="number" name="estoque" placeholder="Qtd" required>
+            <input type="text" name="imagem_url" placeholder="URL da foto">
+            <button type="submit" class="btn btn-green">SALVAR</button>
+        </form>
     </div>
 </body>
 </html>
