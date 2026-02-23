@@ -2,28 +2,18 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    {% if tipo == 'aguardando' %}<meta http-equiv="refresh" content="10">{% endif %}
+    <meta http-equiv="refresh" content="10">
+    <title>Processando Pagamento</title>
     <style>
-        body { background: #000; color: white; font-family: sans-serif; text-align: center; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        body { background: #000; color: white; font-family: sans-serif; text-align: center; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
         .box { padding: 40px; border-radius: 20px; border: 4px solid #f1c40f; max-width: 400px; }
-        .sucesso { border-color: #2ecc71; }
-        .erro { border-color: #e74c3c; }
-        .btn { display: inline-block; margin-top: 20px; padding: 10px 20px; background: #f1c40f; color: #000; text-decoration: none; font-weight: bold; border-radius: 5px; }
     </style>
 </head>
 <body>
-    <div class="box {{ tipo }}">
-        {% if tipo == 'aguardando' %}
-            <h1>PROCESSANDO...</h1>
-            <p>Estamos confirmando o seu Pix com o Mercado Pago. Não feche esta página.</p>
-        {% elif tipo == 'sucesso' %}
-            <h1 style="color:#2ecc71">LIBERADO!</h1>
-            <p>{{ msg }}</p>
-        {% elif tipo == 'erro' %}
-            <h1 style="color:#e74c3c">BLOQUEADO</h1>
-            <p>{{ msg }}</p>
-        {% endif %}
-        <a href="/" class="btn">VOLTAR AO INÍCIO</a>
+    <div class="box">
+        <h1>AGUARDANDO PIX...</h1>
+        <p>Estamos confirmando o seu pagamento com o Mercado Pago. Esta página atualizará automaticamente assim que o Pix cair.</p>
+        <div style="margin-top:20px; color:#f1c40f;">⏳ Verificando status...</div>
     </div>
 </body>
 </html>

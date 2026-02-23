@@ -5,13 +5,13 @@ from sqlalchemy import text
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
-# --- BANCO DE DADOS ---
+# --- BANCO DE DADOS (POSTGRESQL RENDER) ---
 uri = "postgresql://db_fazcomfe_user:bo24NlcJANvGehkj97PytDoNyoiT696V@dpg-d6b4mq4hncsc7386sfag-a/db_fazcomfe?sslmode=require"
 app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# --- MERCADO PAGO ---
+# --- MERCADO PAGO SDK ---
 sdk = mercadopago.SDK("APP_USR-3244228687878580-021915-5528b1d97c9055fab65127d73dc1427d-24221819")
 
 # --- MODELOS ---
@@ -31,12 +31,11 @@ class Produto(db.Model):
     preco_custo = db.Column(db.Float, default=0.0)
     estoque = db.Column(db.Integer, default=0)
     imagem_url = db.Column(db.String(500))
-    ativo = db.Column(db.Boolean, default=True)
 
 with app.app_context():
     db.create_all()
 
-# --- ROTAS ---
+# --- FLUXO DE VENDA ---
 @app.route('/')
 def index():
     return render_template('index.html', preco=45.0)
@@ -70,6 +69,7 @@ def pagamento(id):
 @app.route('/ingresso/<int:id>')
 def validar_ingresso(id):
     c = Cliente.query.get_or_404(id)
+    # VERIFICAÇÃO AUTOMÁTICA MERCADO PAGO
     if not c.pago and c.payment_id:
         info = sdk.payment().get(c.payment_id)
         if info["response"].get("status") == "approved":
@@ -77,9 +77,11 @@ def validar_ingresso(id):
             db.session.commit()
         else:
             return render_template('templates-feedback.html', tipo='aguardando')
+    
     checkin_url = f"https://evento-samba.onrender.com/checkin/{c.id}"
     return render_template('obrigado.html', nome=c.nome, id_reserva=c.id, checkin_url=checkin_url)
 
+# --- PORTARIA E BAR (DASHBOARD ÁGIL) ---
 @app.route('/admin/bar/produtos', methods=['GET', 'POST'])
 def admin_bar_produtos():
     if request.method == 'POST':
@@ -100,20 +102,11 @@ def checkin(id):
     db.session.commit()
     return redirect(url_for('admin_bar_produtos'))
 
-# RESET TURBO: Força a limpeza sem travar
 @app.route('/admin/reset-total')
 def reset_total():
-    try:
-        db.session.execute(text("TRUNCATE TABLE bar_produtos, cliente RESTART IDENTITY CASCADE;"))
-        db.session.commit()
-        return "<h1>Sucesso! Tabelas limpas.</h1><a href='/'>Voltar</a>"
-    except Exception as e:
-        db.session.rollback()
-        db.session.execute(text("DROP TABLE IF EXISTS bar_produtos CASCADE;"))
-        db.session.execute(text("DROP TABLE IF EXISTS cliente CASCADE;"))
-        db.session.commit()
-        db.create_all()
-        return f"<h1>Reset Forçado Concluído.</h1><a href='/'>Voltar</a>"
+    db.session.execute(text("TRUNCATE TABLE bar_produtos, cliente RESTART IDENTITY CASCADE;"))
+    db.session.commit()
+    return "<h1>Sistema Zerado com Sucesso!</h1><a href='/admin/bar/produtos'>Voltar</a>"
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
