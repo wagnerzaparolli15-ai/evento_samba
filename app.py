@@ -52,8 +52,8 @@ def reservar():
         db.session.add(c)
         db.session.commit()
         return redirect(url_for('pagamento', id=c.id))
-    except:
-        return "Erro no banco. Tente novamente em 1 minuto (o sistema está resetando)."
+    except Exception as e:
+        return f"Erro ao reservar: {e}"
 
 @app.route('/pagamento/<int:id>')
 def pagamento(id):
@@ -65,16 +65,16 @@ def pagamento(id):
         c.payment_id = str(result["response"]["id"])
         db.session.commit()
         return render_template('pagamento.html', c=c, pix_codigo=pix["qr_code"], qrcode_base64=pix["qr_code_base64"])
-    except:
-        return "Erro ao gerar PIX. Verifique sua conta Mercado Pago."
+    except Exception as e:
+        return f"Erro no Pix: {e}"
 
 @app.route('/ingresso/<int:id>')
 def ingresso(id):
     c = Cliente.query.get_or_404(id)
     if not c.pago:
         try:
-            status = sdk.payment().get(c.payment_id)["response"]["status"]
-            if status == "approved":
+            res = sdk.payment().get(c.payment_id)
+            if res["response"]["status"] == "approved":
                 c.pago = True
                 db.session.commit()
             else:
@@ -88,7 +88,8 @@ def ingresso(id):
 @app.route('/login-staff', methods=['GET', 'POST'])
 def login_staff():
     if request.method == 'POST':
-        f = Equipe.query.filter_by(usuario=request.form.get('username'), senha=request.form.get('password')).first()
+        # Ajustado para os nomes 'username' e 'senha' do seu login_staff.html
+        f = Equipe.query.filter_by(usuario=request.form.get('username'), senha=request.form.get('senha')).first()
         if f:
             session.update({'staff_id': f.id, 'cargo': f.cargo, 'usuario_nome': f.nome})
             return redirect(url_for('admin_total' if f.cargo == 'admin' else 'portaria'))
@@ -97,9 +98,16 @@ def login_staff():
 @app.route('/admin_total', methods=['GET', 'POST'])
 def admin_total():
     if request.method == 'POST':
+        # Cadastro de equipe
+        if 'novo_staff' in request.form:
+            e = Equipe(nome=request.form.get('nome'), usuario=request.form.get('user'), senha=request.form.get('pass'), cargo=request.form.get('cargo'))
+            db.session.add(e)
+        # Gestão de estoque
         if 'id_prod' in request.form:
             p = Produto.query.get(request.form.get('id_prod'))
-            p.preco_custo, p.preco_venda, p.estoque = float(request.form.get('custo')), float(request.form.get('venda')), int(request.form.get('estoque'))
+            p.preco_custo = float(request.form.get('custo'))
+            p.preco_venda = float(request.form.get('venda'))
+            p.estoque = int(request.form.get('estoque'))
         db.session.commit()
     return render_template('admin_total.html', produtos=Produto.query.all(), equipe=Equipe.query.all(), clientes=Cliente.query.all())
 
@@ -117,13 +125,13 @@ def validar_entrada(id):
 @app.route('/bar-digital/<int:id>')
 def bar_digital(id):
     c = Cliente.query.get_or_404(id)
-    if not c.na_casa: return "Acesso negado."
-    return render_template('gestao_bar.html', produtos=Produto.query.all())
+    return render_template('bar.html', c=c, produtos=Produto.query.all())
 
 if __name__ == '__main__':
     with app.app_context():
-        db.drop_all() # LIMPANDO O ERRO 500
+        # db.drop_all() # Use se precisar resetar o banco do zero
         db.create_all()
-        db.session.add(Equipe(nome='Wagner', usuario='wagner', senha='123', cargo='admin'))
-        db.session.commit()
+        if not Equipe.query.filter_by(usuario='wagner').first():
+            db.session.add(Equipe(nome='Wagner', usuario='wagner', senha='123', cargo='admin'))
+            db.session.commit()
     app.run(host='0.0.0.0', port=10000)
