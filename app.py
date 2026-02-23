@@ -21,7 +21,7 @@ class Equipe(db.Model):
     nome = db.Column(db.String(100))
     usuario = db.Column(db.String(50), unique=True)
     senha = db.Column(db.String(50))
-    cargo = db.Column(db.String(30)) # admin, barman, seguranca, musico, etc.
+    cargo = db.Column(db.String(30))
     cachet = db.Column(db.Float, default=0.0)
 
 class Cliente(db.Model):
@@ -40,7 +40,7 @@ class Produto(db.Model):
     estoque = db.Column(db.Integer, default=0)
     vendidos = db.Column(db.Integer, default=0)
 
-# --- 4. FLUXO DE VENDA E QR CODE PIX ---
+# --- 4. FLUXO DO CLIENTE ---
 @app.route('/')
 def index(): 
     return render_template('index.html')
@@ -65,7 +65,6 @@ def pagamento(id):
     }
     payment_response = sdk.payment().create(payment_data)
     payment = payment_response["response"]
-    
     c.payment_id = str(payment["id"])
     db.session.commit()
     
@@ -74,13 +73,12 @@ def pagamento(id):
                            pix_codigo=payment["point_of_interaction"]["transaction_data"]["qr_code"], 
                            qrcode_base64=payment["point_of_interaction"]["transaction_data"]["qr_code_base64"])
 
-# --- 5. VALIDAÇÃO DE ACESSO ---
 @app.route('/ingresso/<int:id>')
 def ingresso(id):
     c = Cliente.query.get_or_404(id)
     if not c.pago:
         res = sdk.payment().get(c.payment_id)
-        if res["response"]["status"] == "approved":
+        if res.get("response", {}).get("status") == "approved":
             c.pago = True
             db.session.commit()
         else:
@@ -89,7 +87,7 @@ def ingresso(id):
     checkin_url = url_for('validar_entrada', id=c.id, _external=True)
     return render_template('obrigado.html', c=c, checkin_url=checkin_url)
 
-# --- 6. AMBIENTES VIRTUAIS (PORTARIA E BAR) ---
+# --- 5. GESTÃO E AMBIENTES ---
 @app.route('/login-staff', methods=['GET', 'POST'])
 def login_staff():
     if request.method == 'POST':
@@ -97,9 +95,16 @@ def login_staff():
         s = request.form.get('senha')
         f = Equipe.query.filter_by(usuario=u, senha=s).first()
         if f:
-            session.update({'staff_id': f.id, 'cargo': f.cargo, 'nome': f.nome})
+            session.update({'staff_id': f.id, 'cargo': f.cargo, 'usuario_nome': f.nome})
             return redirect(url_for('admin_total' if f.cargo == 'admin' else 'portaria'))
     return render_template('login_staff.html')
+
+@app.route('/portaria')
+def portaria():
+    if 'staff_id' not in session: return redirect(url_for('login_staff'))
+    # Mostra apenas quem pagou e ainda não entrou
+    clientes = Cliente.query.filter_by(pago=True, na_casa=False).all()
+    return render_template('portaria.html', clientes=clientes)
 
 @app.route('/validar-entrada/<int:id>')
 def validar_entrada(id):
@@ -107,6 +112,25 @@ def validar_entrada(id):
     c.na_casa = True
     db.session.commit()
     return render_template('recepcao.html', c=c)
+
+@app.route('/bar-digital/<int:id>')
+def bar_digital(id):
+    c = Cliente.query.get_or_404(id)
+    if not c.na_casa: return "Acesso negado. Por favor, valide sua entrada na portaria.", 403
+    produtos = Produto.query.filter(Produto.estoque > 0).all()
+    return render_template('bar.html', c=c, produtos=produtos)
+
+# Rota para o Barman ou Sistema dar baixa na venda
+@app.route('/comprar_item', methods=['POST'])
+def comprar_item():
+    data = request.json
+    for item in data.get('itens', []):
+        p = Produto.query.get(item['id'])
+        if p and p.estoque > 0:
+            p.estoque -= 1
+            p.vendidos += 1
+    db.session.commit()
+    return jsonify({"status": "success"})
 
 @app.route('/admin_total', methods=['GET', 'POST'])
 def admin_total():
@@ -120,19 +144,32 @@ def admin_total():
             db.session.add(e)
         if 'id_prod' in request.form:
             p = Produto.query.get(request.form.get('id_prod'))
-            p.preco_custo, p.preco_venda, p.estoque = float(request.form.get('custo')), float(request.form.get('venda')), int(request.form.get('estoque'))
+            p.preco_custo = float(request.form.get('custo'))
+            p.preco_venda = float(request.form.get('venda'))
+            p.estoque = int(request.form.get('estoque'))
         db.session.commit()
 
     # Contabilidade Consolidada
     venda_ingressos = db.session.query(db.func.count(Cliente.id)).filter(Cliente.pago == True).scalar() * 45.0
     venda_bar = sum([p.preco_venda * p.vendidos for p in Produto.query.all()])
     custo_equipe = db.session.query(db.func.sum(Equipe.cachet)).scalar() or 0
+    custo_produtos = sum([p.preco_custo * p.vendidos for p in Produto.query.all()])
     
-    fin = {"receita": venda_ingressos + venda_bar, "despesas": custo_equipe, "lucro": (venda_ingressos + venda_bar) - custo_equipe}
+    fin = {
+        "receita": venda_ingressos + venda_bar, 
+        "despesas": custo_equipe + custo_produtos, 
+        "lucro": (venda_ingressos + venda_bar) - (custo_equipe + custo_produtos)
+    }
     return render_template('admin_total.html', equipe=Equipe.query.all(), produtos=Produto.query.all(), clientes=Cliente.query.all(), fin=fin)
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     with app.app_context():
+        # db.drop_all() # Use apenas se precisar resetar o banco do zero
         db.create_all()
         if not Equipe.query.filter_by(usuario='wagner').first():
             db.session.add(Equipe(nome='Wagner', usuario='wagner', senha='123', cargo='admin', cachet=0))
