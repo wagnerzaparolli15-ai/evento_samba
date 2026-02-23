@@ -65,7 +65,7 @@ def reset_total():
     db.session.execute(text("DROP TABLE IF EXISTS cliente CASCADE;"))
     db.session.commit()
     db.create_all()
-    return "<h1>Sucesso! Sistema limpo.</h1><a href='/'>Voltar</a>"
+    return "<h1>Sucesso! O Bafafá está limpo e as tabelas foram recriadas.</h1>"
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
