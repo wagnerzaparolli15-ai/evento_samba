@@ -1,9 +1,12 @@
 import os, re, mercadopago
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
+from functools import wraps
+from datetime import datetime
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
+app.secret_key = "segredo_bafafa_2026_seguranca_total" # Chave para as sessões de login
 
 # --- BANCO DE DADOS ---
 uri = "postgresql://db_fazcomfe_user:bo24NlcJANvGehkj97PytDoNyoiT696V@dpg-d6b4mq4hncsc7386sfag-a/db_fazcomfe?sslmode=require"
@@ -11,7 +14,15 @@ app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+# --- MERCADO PAGO ---
 sdk = mercadopago.SDK("APP_USR-3244228687878580-021915-5528b1d97c9055fab65127d73dc1427d-24221819")
+
+# --- MODELOS ---
+class Usuario(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    senha = db.Column(db.String(50), nullable=False)
+    cargo = db.Column(db.String(30)) # admin, promoter, portaria, bar, cozinha, etc.
 
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -19,6 +30,8 @@ class Cliente(db.Model):
     telefone = db.Column(db.String(20), unique=True)
     pago = db.Column(db.Boolean, default=False)
     utilizado = db.Column(db.Boolean, default=False)
+    quem_liberou = db.Column(db.String(50))
+    data_entrada = db.Column(db.DateTime)
     payment_id = db.Column(db.String(100))
 
 class Produto(db.Model):
@@ -26,16 +39,47 @@ class Produto(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
     preco = db.Column(db.Float, nullable=False)
-    preco_custo = db.Column(db.Float, default=0.0)
     estoque = db.Column(db.Integer, default=0)
     imagem_url = db.Column(db.String(500))
 
 with app.app_context():
     db.create_all()
+    # Cria o Wagner como Admin padrão se não existir
+    if not Usuario.query.filter_by(username='wagner').first():
+        admin = Usuario(username='wagner', senha='123', cargo='admin')
+        db.session.add(admin)
+        db.session.commit()
 
+# --- TRAVA DE SEGURANÇA ---
+def login_obrigatorio(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'usuario_id' not in session:
+            return redirect(url_for('login_staff'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# --- LOGIN / LOGOUT ---
+@app.route('/login-staff', methods=['GET', 'POST'])
+def login_staff():
+    if request.method == 'POST':
+        user = Usuario.query.filter_by(username=request.form.get('username'), senha=request.form.get('senha')).first()
+        if user:
+            session['usuario_id'] = user.id
+            session['usuario_nome'] = user.username
+            session['usuario_cargo'] = user.cargo
+            return redirect(url_for('admin_evento'))
+        return "Usuário ou Senha Inválidos!"
+    return render_template('login_staff.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login_staff'))
+
+# --- FLUXO DO CLIENTE (PÚBLICO) ---
 @app.route('/')
-def index():
-    return render_template('index.html', preco=45.0)
+def index(): return render_template('index.html', preco=45.0)
 
 @app.route('/reservar', methods=['POST'])
 def reservar():
@@ -66,61 +110,42 @@ def pagamento(id):
 @app.route('/ingresso/<int:id>')
 def validar_ingresso(id):
     c = Cliente.query.get_or_404(id)
-    if not c.pago and c.payment_id:
-        info = sdk.payment().get(c.payment_id)
-        if info["response"].get("status") == "approved":
-            c.pago = True
-            db.session.commit()
-        else:
-            return render_template('templates-feedback.html', tipo='aguardando')
-    
-    # Link que o segurança vai ler
+    # Gera o QR Code com o link de validação
     checkin_url = f"https://evento-samba.onrender.com/valida-portaria/{c.id}"
     return render_template('obrigado.html', c=c, checkin_url=checkin_url)
 
-# --- AÇÃO DA ADMINISTRAÇÃO (APENAS ATUALIZA STATUS) ---
-@app.route('/checkin/<int:id>')
-def checkin(id):
-    c = Cliente.query.get_or_404(id)
-    c.pago = True
-    c.utilizado = True
-    db.session.commit()
-    # VOLTA PARA A ADMIN, SEM MUDAR DE PÁGINA PARA O BAR
-    return redirect(url_for('admin_evento'))
-
-# --- AÇÃO DO SEGURANÇA (MOSTRA A RECEPÇÃO E BAR) ---
+# --- FLUXO DA EQUIPE (PROTEGIDO) ---
 @app.route('/valida-portaria/<int:id>')
+@login_obrigatorio
 def valida_portaria(id):
     c = Cliente.query.get_or_404(id)
-    c.pago = True
+    if c.utilizado:
+        return f"<h1>❌ ERRO: JÁ UTILIZADO!</h1><p>Liberado por {c.quem_liberou} às {c.data_entrada.strftime('%H:%M')}</p>"
+    
     c.utilizado = True
+    c.pago = True
+    c.quem_liberou = session['usuario_nome']
+    c.data_entrada = datetime.now()
     db.session.commit()
     return render_template('recepcao.html', c=c)
 
-@app.route('/bar/<int:id>')
-def bar_digital(id):
-    c = Cliente.query.get_or_404(id)
-    produtos = Produto.query.all()
-    return render_template('bar.html', c=c, produtos=produtos)
-
 @app.route('/admin/evento', methods=['GET', 'POST'])
+@login_obrigatorio
 def admin_evento():
     if request.method == 'POST':
-        p = Produto(nome=request.form.get('nome'), preco=float(request.form.get('preco_venda')),
-                    preco_custo=float(request.form.get('preco_custo')), estoque=int(request.form.get('estoque')),
-                    imagem_url=request.form.get('imagem_url'))
-        db.session.add(p)
+        if 'new_user' in request.form:
+            u = Usuario(username=request.form.get('username'), senha=request.form.get('senha'), cargo=request.form.get('cargo'))
+            db.session.add(u)
+        elif 'nome_prod' in request.form:
+            p = Produto(nome=request.form.get('nome_prod'), preco=float(request.form.get('preco')), estoque=int(request.form.get('estoque')))
+            db.session.add(p)
         db.session.commit()
         return redirect(url_for('admin_evento'))
-    produtos = Produto.query.all()
-    clientes = Cliente.query.order_by(Cliente.id.desc()).all()
-    return render_template('admin_bar.html', produtos=produtos, clientes=clientes)
 
-@app.route('/admin/reset-total')
-def reset_total():
-    db.session.execute(text("TRUNCATE TABLE bar_produtos, cliente RESTART IDENTITY CASCADE;"))
-    db.session.commit()
-    return "<h1>Sistema Limpo!</h1><a href='/admin/evento'>Voltar</a>"
+    clientes = Cliente.query.order_by(Cliente.id.desc()).all()
+    produtos = Produto.query.all()
+    staff = Usuario.query.all()
+    return render_template('admin_bar.html', clientes=clientes, produtos=produtos, staff=staff)
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
