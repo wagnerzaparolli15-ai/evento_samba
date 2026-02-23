@@ -3,7 +3,8 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 
-app = Flask(__name__)
+# CONFIGURAÇÃO DE IMAGENS: Força o Flask a servir a pasta static corretamente
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 
 # --- BANCO DE DADOS (PostgreSQL Render) ---
 uri = "postgresql://db_fazcomfe_user:bo24NlcJANvGehkj97PytDoNyoiT696V@dpg-d6b4mq4hncsc7386sfag-a/db_fazcomfe?sslmode=require"
@@ -29,13 +30,18 @@ class Produto(db.Model):
     preco = db.Column(db.Float, nullable=False)
     preco_custo = db.Column(db.Float, default=0.0)
     estoque = db.Column(db.Integer, default=0)
-    imagem_url = db.Column(db.String(500)) # Link da foto/logo
+    imagem_url = db.Column(db.String(500)) 
     ativo = db.Column(db.Boolean, default=True)
 
-# --- ROTAS DO CLIENTE ---
+# GARANTE QUE AS TABELAS EXISTAM AO LIGAR O SITE
+with app.app_context():
+    db.create_all()
+
+# --- ROTAS DO SISTEMA ---
 
 @app.route('/')
 def index():
+    # Carrega a página inicial com o preço do ingresso
     return render_template('index.html', preco=45.0)
 
 @app.route('/reservar', methods=['POST'])
@@ -43,43 +49,33 @@ def reservar():
     try:
         nome = request.form.get('nome', '').upper().strip()
         tel = re.sub(r"\D", "", request.form.get('telefone', ''))
+        
         c = Cliente.query.filter_by(telefone=tel).first()
         if not c:
             c = Cliente(nome=nome, telefone=tel)
             db.session.add(c)
             db.session.commit()
-        return redirect(url_for('pagamento', id=c.id))
+        
+        # GERA O PAGAMENTO PIX
+        pay_data = {
+            "transaction_amount": 45.00,
+            "description": f"Ingresso Bafafá - {c.nome}",
+            "payment_method_id": "pix",
+            "payer": {"email": "wagnerzaparolli15@gmail.com"}
+        }
+        result = sdk.payment().create(pay_data)
+        pix = result["response"]["point_of_interaction"]["transaction_data"]
+        
+        return render_template('pagamento.html', c=c, pix_codigo=pix["qr_code"], qrcode_base64=pix["qr_code_base64"])
     except Exception as e:
-        return f"Erro ao reservar: {str(e)}"
-
-@app.route('/pagamento/<int:id>')
-def pagamento(id):
-    c = Cliente.query.get_or_404(id)
-    # Gera o Pix de R$ 45,00
-    pay_data = {
-        "transaction_amount": 45.00,
-        "description": f"Ingresso Bafafá - {c.nome}",
-        "payment_method_id": "pix",
-        "payer": {"email": "wagnerzaparolli15@gmail.com"}
-    }
-    result = sdk.payment().create(pay_data)
-    pix = result["response"]["point_of_interaction"]["transaction_data"]
-    return render_template('pagamento.html', c=c, pix_codigo=pix["qr_code"], qrcode_base64=pix["qr_code_base64"])
+        return f"Erro na reserva: {str(e)}"
 
 @app.route('/ingresso/<int:id>')
 def validar_ingresso(id):
     c = Cliente.query.get_or_404(id)
-    if c.utilizado: return redirect(url_for('bar', id=c.id))
-    if c.pago: return render_template('recepcao.html', c=c)
-    return render_template('templates-feedback.html', tipo='aguardando', id=c.id)
-
-@app.route('/bar/<int:id>')
-def bar(id):
-    c = Cliente.query.get_or_404(id)
-    produtos = Produto.query.filter_by(ativo=True).all()
-    return render_template('bar.html', c=c, produtos=produtos)
-
-# --- ROTAS DE GESTÃO (ADMIN) ---
+    # Gera a URL de check-in para o QR Code
+    checkin_url = f"https://evento-samba.onrender.com/checkin/{c.id}"
+    return render_template('obrigado.html', nome=c.nome, id_reserva=c.id, checkin_url=checkin_url)
 
 @app.route('/admin/bar/produtos', methods=['GET', 'POST'])
 def admin_bar_produtos():
@@ -95,33 +91,31 @@ def admin_bar_produtos():
         db.session.commit()
         return redirect(url_for('admin_bar_produtos'))
     
-    try:
-        produtos = Produto.query.all()
-        clientes = Cliente.query.order_by(Cliente.id.desc()).all()
-    except:
-        produtos, clientes = [], []
+    produtos = Produto.query.all()
+    clientes = Cliente.query.order_by(Cliente.id.desc()).all()
     return render_template('admin_bar.html', produtos=produtos, clientes=clientes)
 
 @app.route('/checkin/<int:id>')
 def checkin(id):
     c = Cliente.query.get_or_404(id)
     c.utilizado = True
-    c.pago = True # Libera o acesso ao bar
+    c.pago = True # Libera acesso
     db.session.commit()
-    return redirect(url_for('admin_bar_produtos'))
+    return render_template('recepcao.html', c=c)
 
 @app.route('/admin/reset-total')
 def reset_total():
     try:
-        # COMANDO CASCADE: Remove todas as travas e tabelas presas
+        # Comando supremo para limpar erros de banco
         db.session.execute(text("DROP TABLE IF EXISTS bar_produtos CASCADE;"))
         db.session.execute(text("DROP TABLE IF EXISTS cliente CASCADE;"))
         db.session.commit()
         db.create_all()
-        return "<h1>Sucesso! O Bafafá está limpo e as tabelas foram recriadas.</h1>"
+        return "<h1>Sucesso! O Bafafá está limpo e as tabelas foram recriadas.</h1><a href='/'>Voltar</a>"
     except Exception as e:
         return f"<h1>Erro ao resetar: {str(e)}</h1>"
 
 if __name__ == '__main__':
+    # Configuração de porta para o Render
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
