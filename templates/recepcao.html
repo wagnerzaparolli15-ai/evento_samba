@@ -2,21 +2,17 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Entrada Liberada</title>
+    <title>Bem-vindo ao Bafafá</title>
     <style>
-        body { background: #121212; color: white; font-family: sans-serif; text-align: center; padding: 40px 20px; }
-        .box { border: 3px solid #2ecc71; padding: 30px; border-radius: 20px; background: #1a1a1a; }
-        .btn-bar { display: inline-block; background: #f1c40f; color: black; padding: 18px 30px; border-radius: 10px; text-decoration: none; font-weight: bold; margin-top: 25px; font-size: 1.2rem; }
+        body { background: #000; color: white; font-family: sans-serif; text-align: center; padding: 50px; }
+        .btn-bar { display: inline-block; background: #f1c40f; color: black; padding: 20px 40px; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 1.5rem; margin-top: 30px; }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h1 style="color: #2ecc71; font-size: 50px; margin: 0;">✅</h1>
-        <h1>ENTRADA LIBERADA</h1>
-        <p>Bem-vindo(a), <strong>{{ c.nome }}</strong>!</p>
-        <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
-        <p>Sua feijoada está liberada na cozinha. Para bebidas, acesse:</p>
-        <a href="/bar/{{ c.id }}" class="btn-bar">ABRIR BAR DIGITAL 🍺</a>
-    </div>
+    <h1 style="color: #2ecc71;">ENTRADA LIBERADA! ✅</h1>
+    <p>Olá, {{ c.nome }}! Divirta-se muito no nosso pagode.</p>
+    <p>Sua feijoada já está garantida.</p>
+    
+    <a href="/bar-digital/{{ c.id }}" class="btn-bar">🍺 ABRIR BAR DIGITAL</a>
 </body>
 </html>
