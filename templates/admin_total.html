@@ -1,46 +1,62 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Master Bafafá</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Admin - Bafafá</title>
     <style>
-        body { font-family: sans-serif; background: #121212; color: white; padding: 20px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #050505; color: #fff; margin: 0; padding: 20px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .card { background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; }
-        .resumo { font-size: 24px; font-weight: bold; color: #00ff88; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #252525; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #444; }
-        th { background: #333; }
-        .badge { background: #6200ee; padding: 5px 10px; border-radius: 4px; font-size: 12px; }
-        input, select { padding: 8px; margin: 5px 0; width: 100%; box-sizing: border-box; }
-        .btn { background: #28a745; color: white; border: none; padding: 10px; cursor: pointer; width: 100%; border-radius: 4px; margin-top: 10px; }
+        .card { background: #111; padding: 25px; border-radius: 20px; border: 1px solid #222; }
+        .lucro { font-size: 38px; color: #00ff88; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; border-bottom: 1px solid #222; text-align: left; }
+        .btn { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 5px; }
+        .btn-manual { background: #ffcc00; color: #000; text-decoration: none; display: inline-block; text-align: center; }
+        input { width: 100%; padding: 10px; margin: 5px 0; background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 5px; box-sizing: border-box; }
     </style>
 </head>
 <body>
-    <h1>Central de Comando - Bafafá 2026</h1>
-    
+    <h1 style="text-align: center; color: #00d4ff;">🛡️ Gestão Analítica Bafafá 2026</h1>
+
     <div class="grid">
         <div class="card">
-            <h3>💰 Contabilidade Real</h3>
-            <p>Receita Bruta: <span class="resumo">R$ {{ "%.2f"|format(fin.receita) }}</span></p>
-            <p>Lucro Líquido: <span style="color: #00d4ff;">R$ {{ "%.2f"|format(fin.lucro) }}</span></p>
-            <p>Pessoas na Casa: <strong>{{ fin.na_casa }}</strong></p>
+            <h3>💰 Lucro Líquido Real</h3>
+            <div class="lucro">R$ {{ "%.2f"|format(fin.lucro) }}</div>
+            <p>Pessoas no Evento: <strong>{{ fin.na_casa }}</strong></p>
         </div>
 
         <div class="card">
-            <h3>👥 Cadastrar Equipe</h3>
+            <h3>💸 Lançar Despesa (Fixos/Extras)</h3>
             <form method="POST">
-                <input type="hidden" name="add_equipe" value="1">
-                <input type="text" name="nome" placeholder="Nome" required>
-                <input type="text" name="usuario" placeholder="Login" required>
-                <input type="text" name="senha" placeholder="Senha" required>
-                <input type="text" name="cargo" placeholder="Cargo (portaria/bar)">
-                <input type="number" name="cachet" placeholder="Cachê R$" step="0.01">
-                <button type="submit" class="btn">Salvar Funcionário</button>
+                <input type="hidden" name="add_custo" value="1">
+                <input type="text" name="d" placeholder="Descrição (Ex: Gelo, Aluguel)" required>
+                <input type="number" name="v" placeholder="Valor R$" step="0.01" required>
+                <button type="submit" class="btn" style="background:#6200ee; color:#fff;">REGISTRAR GASTO</button>
             </form>
         </div>
+    </div>
 
-        <div class="card">
-            <h3>🍺 Gestão de Estoque/Bar</h3>
-            <form method="POST">
-                <input type="hidden" name="
+    <div class="card" style="margin-top: 20px; border-color: #ffcc00;">
+        <h3 style="color: #ffcc00;">⚠️ Liberação Manual (Dinheiro / Cartão / Falha de Internet)</h3>
+        <table>
+            <thead><tr><th>Nome</th><th>Ações</th></tr></thead>
+            <tbody>
+                {% for c in fin.pendentes %}
+                <tr>
+                    <td>{{ c.nome }}</td>
+                    <td>
+                        <a href="/confirmar-manual/{{ c.id }}?m=dinheiro" class="btn-manual" style="padding: 5px 10px; border-radius: 5px;"> DINHEIRO </a>
+                        <a href="/confirmar-manual/{{ c.id }}?m=cartao_manual" class="btn-manual" style="background:#00d4ff; padding: 5px 10px; border-radius: 5px;"> CARTÃO </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="margin-top: 50px; text-align: center;">
+        <a href="/reset-total-bafafa-2026" onclick="return confirm('Deseja zerar o sistema para o próximo evento?')" style="color: #ff4444; text-decoration: none;">🔴 RESET TOTAL DO SISTEMA</a>
+    </div>
+</body>
+</html>

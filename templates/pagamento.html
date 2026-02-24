@@ -2,21 +2,29 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Pagamento - Pagode do Cara</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagamento - Bafafá 2026</title>
     <style>
-        body { background: #000; color: white; font-family: sans-serif; text-align: center; padding: 50px 20px; }
-        .container { background: rgba(0,0,0,0.9); padding: 30px; border-radius: 20px; border: 2px solid #f1c40f; display: inline-block; }
-        .valor { font-size: 45px; color: #2ecc71; font-weight: bold; }
-        .qrcode-pix { background: white; padding: 10px; border-radius: 10px; margin: 20px auto; width: 220px; }
+        body { font-family: sans-serif; background: #000; color: #fff; text-align: center; padding: 20px; }
+        .card { background: #111; padding: 20px; border-radius: 15px; border: 1px solid #333; max-width: 400px; margin: auto; }
+        .qr-area { background: #fff; padding: 15px; display: inline-block; border-radius: 10px; margin: 20px 0; }
+        .btn { display: block; background: #00ff88; color: #000; padding: 15px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 10px; }
+        .metodo { color: #00d4ff; font-weight: bold; margin-bottom: 10px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>PAGAMENTO PIX</h1>
-        <div class="qrcode-pix"><img src="data:image/jpeg;base64,{{ qrcode_base64 }}" style="width:100%"></div>
-        <p>Valor:</p><div class="valor">R$ 45,00</div>
-        <p>Código Pix:</p><small style="word-break: break-all;">{{ pix_codigo }}</small><br><br>
-        <a href="/ingresso/{{ c.id }}" style="background:#f1c40f; color:#000; padding:15px; border-radius:8px; text-decoration:none; font-weight:bold;">JÁ PAGUEI, VER MEU INGRESSO</a>
+    <div class="card">
+        <h2>Finalizar Reserva</h2>
+        <p>Cliente: <strong>{{ c.nome }}</strong></p>
+        <p class="metodo">Forma: {{ tipo.upper() }}</p>
+        <p>Total: <strong>R$ {{ "%.2f"|format(c.valor_total) }}</strong></p>
+
+        <div class="qr-area">
+            <img src="data:image/png;base64,{{ qr_img }}" alt="QR Code de Pagamento" style="width: 200px;">
+        </div>
+
+        <p>Aponte a câmera ou use o App do Banco</p>
+        <a href="/ingresso/{{ c.id }}" class="btn">JÁ PAGUEI, VER INGRESSO</a>
     </div>
 </body>
 </html>

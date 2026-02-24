@@ -3,23 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <title>Seu Ingresso - Bafafá</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { background: #000 url("/static/fundo.jpg") no-repeat center center fixed; background-size: cover; color: white; font-family: sans-serif; text-align: center; padding: 20px; }
-        .ticket { background: #fff; color: #000; max-width: 320px; margin: 20px auto; padding: 25px; border-radius: 20px; border: 5px solid #f1c40f; }
-        .logo { width: 100px; margin-bottom: 10px; }
+        body { font-family: sans-serif; background: #000; color: #fff; text-align: center; padding: 20px; }
+        .ingresso { background: #111; border: 2px dashed #00ff88; padding: 25px; border-radius: 15px; }
+        .status { color: #00ff88; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div class="ticket">
-        <img src="/static/logo.jpg" class="logo">
-        <h2>{{ c.nome }}</h2>
-        <p style="background: #f1c40f; font-weight: bold; padding: 5px;">INGRESSO CONFIRMADO ✅</p>
+    <div class="ingresso">
+        <h1>Bafafá 2026</h1>
+        <p>Apresente este ingresso na porta</p>
         <hr>
-        <p>Apresente ao segurança:</p>
-        
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ checkin_url }}" alt="QR Code">
-        
-        <p style="font-size: 12px; color: #666; margin-top: 15px;">Reserva #{{ c.id }}</p>
+        <h2>{{ c.nome }}</h2>
+        <p class="status">PAGAMENTO CONFIRMADO via {{ c.metodo.upper() }}</p>
+        <p>ID: #{{ c.id }}</p>
+        <br>
+        <p style="font-size: 12px; color: #666;">O link do bar será liberado no check-in</p>
     </div>
 </body>
 </html>
