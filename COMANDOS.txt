@@ -21,3 +21,5 @@ Link de Logout (Sair do sistema):
 
 
 cd "C:\Users\windows\Desktop\evento_samba"
+
+https://evento-samba.onrender.com/limpar-banco-bafafa-2026
