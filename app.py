@@ -9,14 +9,14 @@ app = Flask(__name__)
 db_url = os.getenv("DATABASE_URL")
 if db_url and db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = db_url or "sqlite:///bafafa_final_2026.db"
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url or "sqlite:///bafafa_2026.db"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key = os.getenv("SECRET_KEY", "CHAVE_MESTRA_BAFAFA_2026")
+app.secret_key = os.getenv("SECRET_KEY", "BAFAFA_CHAVE_MESTRA_2026")
 
 db = SQLAlchemy(app)
 sdk = mercadopago.SDK(os.getenv("MP_ACCESS_TOKEN"))
 
-# --- MODELOS DE DADOS (INTEGRIDADE TOTAL) ---
+# --- MODELOS DE DADOS ---
 class Equipe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100)); usuario = db.Column(db.String(50), unique=True)
@@ -26,7 +26,7 @@ class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True); nome = db.Column(db.String(100)); telefone = db.Column(db.String(20))
     pago = db.Column(db.Boolean, default=False); na_casa = db.Column(db.Boolean, default=False)
     metodo = db.Column(db.String(20), default="pix"); payment_id = db.Column(db.String(100))
-    valor_total = db.Column(db.Float, default=45.0); quem_liberou = db.Column(db.String(50))
+    valor_total = db.Column(db.Float, default=45.0)
 
 class Produto(db.Model):
     id = db.Column(db.Integer, primary_key=True); nome = db.Column(db.String(100))
@@ -36,7 +36,7 @@ class Produto(db.Model):
 class CustoOperacional(db.Model):
     id = db.Column(db.Integer, primary_key=True); descricao = db.Column(db.String(100)); valor = db.Column(db.Float)
 
-# --- AUXILIARES (QR CODE) ---
+# --- AUXILIARES ---
 def gerar_qr_base64(conteudo):
     qr = qrcode.QRCode(version=1, box_size=10, border=2)
     qr.add_data(conteudo); qr.make(fit=True)
@@ -44,7 +44,7 @@ def gerar_qr_base64(conteudo):
     buf = io.BytesIO(); img.save(buf, format="PNG")
     return base64.b64encode(buf.getvalue()).decode()
 
-# --- ROTAS DE FLUXO CLIENTE ---
+# --- ROTAS CLIENTE ---
 @app.route('/')
 def index(): return render_template('index.html')
 
@@ -58,14 +58,11 @@ def reservar():
 def pagamento(id):
     c = Cliente.query.get_or_404(id)
     try:
-        res = sdk.payment().create({
-            "transaction_amount": 45.0, "description": "Bafafá 2026", "payment_method_id": "pix",
-            "notification_url": url_for('webhook', _external=True), "payer": {"email": "vendas@bafafa.com"}
-        })
+        res = sdk.payment().create({"transaction_amount": 45.0, "description": "Bafafá 2026", "payment_method_id": "pix", "notification_url": url_for('webhook', _external=True), "payer": {"email": "vendas@bafafa.com"}})
         c.payment_id = str(res["response"]["id"]); db.session.commit()
-        qr_pix = res["response"]["point_of_interaction"]["transaction_data"]["qr_code"]
-        return render_template('pagamento.html', c=c, qr_img=gerar_qr_base64(qr_pix), tipo="pix")
-    except: return "Erro ao ligar ao Mercado Pago. Verifique o Token no Render.", 500
+        qr_img = gerar_qr_base64(res["response"]["point_of_interaction"]["transaction_data"]["qr_code"])
+        return render_template('pagamento.html', c=c, qr_img=qr_img, tipo="pix")
+    except: return "Erro MP - Verifique o Token no Render.", 500
 
 @app.route('/ingresso/<int:id>')
 def ingresso(id):
@@ -73,21 +70,19 @@ def ingresso(id):
     if not c.pago: return render_template('templates-feedback.html', c=c)
     return render_template('obrigado.html', c=c)
 
-# --- ROTAS DE STAFF E ADMIN MASTER ---
+# --- ROTAS ADMIN E STAFF ---
 @app.route('/login-staff', methods=['GET', 'POST'])
 def login_staff():
     if request.method == 'POST':
         u = Equipe.query.filter_by(usuario=request.form.get('username'), senha=request.form.get('senha')).first()
         if u:
             session.update({'cargo': u.cargo, 'usuario_nome': u.nome})
-            if u.cargo in ['admin', 'gerente']: return redirect(url_for('admin_total'))
-            if u.cargo == 'portaria': return redirect(url_for('portaria'))
+            return redirect(url_for('admin_total'))
     return render_template('login_staff.html')
 
 @app.route('/admin_total', methods=['GET', 'POST'])
 def admin_total():
-    if session.get('cargo') not in ['admin', 'gerente']: return redirect(url_for('login_staff'))
-    
+    if not session.get('cargo') in ['admin', 'gerente']: return redirect(url_for('login_staff'))
     if request.method == 'POST':
         tipo = request.form.get('form_tipo')
         if tipo == 'produto':
@@ -95,22 +90,15 @@ def admin_total():
         elif tipo == 'custo':
             db.session.add(CustoOperacional(descricao=request.form.get('d'), valor=float(request.form.get('v'))))
         db.session.commit()
-
-    entradas = db.session.query(func.sum(Cliente.valor_total)).filter(Cliente.pago==True).scalar() or 0
-    custos_op = db.session.query(func.sum(CustoOperacional.valor)).scalar() or 0
-    custos_staff = db.session.query(func.sum(Equipe.cachet)).scalar() or 0
     
-    return render_template('admin_total.html', 
-                           total_entradas=entradas, 
-                           total_custos=(custos_op + custos_staff),
-                           clientes_pendentes=Cliente.query.filter_by(pago=False).all(),
-                           produtos=Produto.query.all())
+    entradas = db.session.query(func.sum(Cliente.valor_total)).filter(Cliente.pago==True).scalar() or 0
+    gastos = (db.session.query(func.sum(CustoOperacional.valor)).scalar() or 0) + (db.session.query(func.sum(Equipe.cachet)).scalar() or 0)
+    return render_template('admin_total.html', total_entradas=entradas, total_custos=gastos, produtos=Produto.query.all(), clientes=Cliente.query.filter_by(pago=True).all())
 
 @app.route('/portaria')
 def portaria():
     if session.get('cargo') not in ['admin', 'portaria']: return redirect(url_for('login_staff'))
-    clientes = Cliente.query.filter_by(pago=True, na_casa=False).all()
-    return render_template('portaria.html', clientes=clientes)
+    return render_template('portaria.html', clientes=Cliente.query.filter_by(pago=True, na_casa=False).all())
 
 @app.route('/validar-entrada/<int:id>')
 def validar_entrada(id):
@@ -121,8 +109,7 @@ def validar_entrada(id):
 @app.route('/bar-digital/<int:id>')
 def bar_digital(id):
     c = Cliente.query.get_or_404(id)
-    produtos = Produto.query.filter(Produto.estoque > 0).all()
-    return render_template('bar.html', c=c, produtos=produtos)
+    return render_template('bar.html', c=c, produtos=Produto.query.filter(Produto.estoque > 0).all())
 
 @app.route('/reset-bruto-bafafa')
 def reset():
