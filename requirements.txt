@@ -1,7 +1,5 @@
 Flask
 Flask-SQLAlchemy
 psycopg2-binary
-requests
+mercadopago
 gunicorn
-SQLAlchemy==2.0.25
-mercadopago==2.3.0

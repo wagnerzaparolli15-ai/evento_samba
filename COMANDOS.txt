@@ -18,3 +18,6 @@ Painel de Administração Geral (Seu Controle):
 
 Link de Logout (Sair do sistema):
 👉 https://evento-samba.onrender.com/logout
+
+
+cd "C:\Users\windows\Desktop\evento_samba"

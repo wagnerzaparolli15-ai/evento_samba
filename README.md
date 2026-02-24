@@ -1,27 +1,46 @@
 # Sistema de Gestão Bafafá 🎷
 
-Sistema completo para venda de ingressos via Pix e controle de bar.
+Sistema completo para venda de ingressos via Pix, controle de portaria e gestão de bar para eventos.
 
-## 🚀 Funcionalidades Principal
+---
 
-- Venda de ingressos com integração Mercado Pago.
-- Check-in automático via QR Code na portaria.
-- Cardápio digital para pedidos no celular do cliente.
+## 🚀 Funcionalidades Principais
+
+- ✅ Venda de ingressos com integração ao Mercado Pago (Pix).
+- ✅ Geração automática de QR Code para pagamento.
+- ✅ Confirmação automática de pagamento.
+- ✅ Check-in na portaria.
+- ✅ Cardápio digital para pedidos pelo celular.
+- ✅ Painel administrativo com controle financeiro.
+
+---
 
 ## 🛠️ Tecnologias Utilizadas
 
-- Python / Flask
-- SQLAlchemy (Banco de Dados PostgreSQL)
+- Python
+- Flask
+- SQLAlchemy
+- PostgreSQL (Render)
 - Mercado Pago SDK
 
-## 📋 Como Executar o Projeto
+---
 
-1. Instale as dependências: `pip install -r requirements.txt`
-2. Configure as chaves do Mercado Pago no `app.py`.
-3. Execute a aplicação: `python app.py`
+## ⚙️ Configuração no Render
 
-## 👥 Equipe e Gestão
+As chaves e credenciais **não ficam no código**.
 
-O sistema permite o cadastro de diferentes níveis de acesso como Segurança, Barman e Administrador.
+Elas devem ser configuradas em:
 
-Desenvolvido para o Pagode do Cara.
+Render Dashboard → Environment Variables
+
+Variáveis obrigatórias:
+
+- `DATABASE_URL`
+- `MP_ACCESS_TOKEN`
+- `SECRET_KEY`
+
+---
+
+## ▶️ Como Executar Localmente
+
+1. Instale as dependências:
