@@ -5,7 +5,7 @@ from sqlalchemy import func
 
 app = Flask(__name__)
 
-# --- 1. CONFIGURAÇÃO DO BANCO (RENDER) ---
+# --- CONFIGURAÇÃO ---
 db_url = os.getenv("DATABASE_URL")
 if db_url and db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
@@ -14,12 +14,12 @@ if db_url and "sslmode" not in db_url:
 
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key = os.getenv("SECRET_KEY", "BAFAFA_2026_TOTAL_SECURE")
+app.secret_key = os.getenv("SECRET_KEY", "BAFAFA_2026_MASTER_CONTROL")
 
 db = SQLAlchemy(app)
 sdk = mercadopago.SDK(os.getenv("MP_ACCESS_TOKEN"))
 
-# --- 2. MODELOS ---
+# --- MODELOS ---
 class Equipe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100)); usuario = db.Column(db.String(50), unique=True)
@@ -35,14 +35,13 @@ class Produto(db.Model):
     preco_custo = db.Column(db.Float, default=0.0); preco_venda = db.Column(db.Float, default=0.0)
     estoque = db.Column(db.Integer, default=0); vendidos = db.Column(db.Integer, default=0)
 
-# --- 3. INICIALIZAÇÃO ---
 with app.app_context():
     db.create_all()
     if not Equipe.query.filter_by(usuario='wagner').first():
         db.session.add(Equipe(nome='Wagner Master', usuario='wagner', senha='123', cargo='admin', cachet=0))
         db.session.commit()
 
-# --- 4. ROTAS DO FLUXO DO CLIENTE ---
+# --- ROTAS ---
 @app.route('/')
 def index(): return render_template('index.html')
 
@@ -60,9 +59,27 @@ def pagamento(id):
         pix = res["response"]["point_of_interaction"]["transaction_data"]
         c.payment_id = str(res["response"]["id"]); db.session.commit()
         return render_template('pagamento.html', c=c, pix_codigo=pix["qr_code"], qrcode_base64=pix["qr_code_base64"])
-    except: return "Erro no Mercado Pago. Verifique o Token no Render."
+    except: return "Erro MP. Verifique o Token.", 500
 
-# --- 5. PAINEL ADMINISTRATIVO E GESTÃO ---
+@app.route('/validar-entrada/<int:id>')
+def validar_entrada(id):
+    if 'usuario_nome' not in session: return redirect(url_for('login_staff'))
+    c = Cliente.query.get_or_404(id)
+    c.na_casa = True
+    c.quem_liberou = session['usuario_nome']
+    db.session.commit()
+    return render_template('recepcao.html', c=c)
+
+@app.route('/comprar_item', methods=['POST'])
+def comprar_item():
+    data = request.json
+    for item in data.get('itens', []):
+        p = Produto.query.get(item['id'])
+        if p and p.estoque > 0:
+            p.estoque -= 1; p.vendidos += 1
+    db.session.commit()
+    return jsonify({"status": "success"})
+
 @app.route('/login-staff', methods=['GET', 'POST'])
 def login_staff():
     if request.method == 'POST':
@@ -83,24 +100,16 @@ def admin_total():
             db.session.add(Produto(nome=request.form.get('nome'), preco_custo=float(request.form.get('custo')), preco_venda=float(request.form.get('venda')), estoque=int(request.form.get('estoque'))))
         db.session.commit()
 
-    # Cálculos Financeiros
-    ingressos_pago = db.session.query(func.count(Cliente.id)).filter(Cliente.pago == True).scalar() or 0
-    receita_ingressos = ingressos_pago * 45.0
-    receita_bar = sum([p.preco_venda * p.vendidos for p in Produto.query.all()])
-    despesas_equipe = db.session.query(func.sum(Equipe.cachet)).scalar() or 0
+    prod_all = Produto.query.all()
+    ingressos_pago = Cliente.query.filter_by(pago=True).count()
+    rec_ingresso = ingressos_pago * 45.0
+    rec_bar = sum([p.preco_venda * p.vendidos for p in prod_all])
+    custo_bar = sum([p.preco_custo * p.vendidos for p in prod_all])
+    despesa_equipe = db.session.query(func.sum(Equipe.cachet)).scalar() or 0
     
-    fin = {
-        "receita": receita_ingressos + receita_bar,
-        "despesas": despesas_equipe,
-        "lucro": (receita_ingressos + receita_bar) - despesas_equipe
-    }
+    fin = {"receita": rec_ingresso + rec_bar, "lucro": (rec_ingresso + rec_bar) - (despesa_equipe + custo_bar), "na_casa": Cliente.query.filter_by(na_casa=True).count()}
     
-    return render_template('admin_total.html', equipe=Equipe.query.all(), produtos=Produto.query.all(), clientes=Cliente.query.all(), fin=fin)
-
-@app.route('/logout')
-def logout():
-    session.clear(); return redirect(url_for('index'))
+    return render_template('admin_total.html', equipe=Equipe.query.all(), produtos=prod_all, clientes_na_casa=Cliente.query.filter_by(na_casa=True).all(), fin=fin)
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))

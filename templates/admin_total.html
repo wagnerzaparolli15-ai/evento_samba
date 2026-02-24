@@ -1,69 +1,46 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Bafafá 2026</title>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Master Bafafá</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; padding: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        body { font-family: sans-serif; background: #121212; color: white; padding: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
         .card { background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; }
-        .receita { color: #00ff88; font-size: 24px; font-weight: bold; }
-        .lucro { color: #00d4ff; font-size: 24px; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { padding: 10px; border-bottom: 1px solid #333; text-align: left; }
-        input { padding: 8px; margin: 5px 0; width: 90%; border-radius: 4px; border: 1px solid #444; background: #222; color: white; }
-        .btn { background: #6200ee; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .btn:hover { background: #3700b3; }
+        .resumo { font-size: 24px; font-weight: bold; color: #00ff88; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #252525; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #444; }
+        th { background: #333; }
+        .badge { background: #6200ee; padding: 5px 10px; border-radius: 4px; font-size: 12px; }
+        input, select { padding: 8px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+        .btn { background: #28a745; color: white; border: none; padding: 10px; cursor: pointer; width: 100%; border-radius: 4px; margin-top: 10px; }
     </style>
 </head>
 <body>
-    <h1>Painel Administrativo - Bafafá 2026</h1>
+    <h1>Central de Comando - Bafafá 2026</h1>
     
     <div class="grid">
         <div class="card">
-            <h3>Financeiro Total</h3>
-            <p>Receita: <span class="receita">R$ {{ "%.2f"|format(fin.receita) }}</span></p>
-            <p>Despesas: R$ {{ "%.2f"|format(fin.despesas) }}</p>
-            <p>Lucro Estimado: <span class="lucro">R$ {{ "%.2f"|format(fin.lucro) }}</span></p>
+            <h3>💰 Contabilidade Real</h3>
+            <p>Receita Bruta: <span class="resumo">R$ {{ "%.2f"|format(fin.receita) }}</span></p>
+            <p>Lucro Líquido: <span style="color: #00d4ff;">R$ {{ "%.2f"|format(fin.lucro) }}</span></p>
+            <p>Pessoas na Casa: <strong>{{ fin.na_casa }}</strong></p>
         </div>
 
         <div class="card">
-            <h3>Cadastrar Novo Staff</h3>
+            <h3>👥 Cadastrar Equipe</h3>
             <form method="POST">
                 <input type="hidden" name="add_equipe" value="1">
-                <input type="text" name="nome" placeholder="Nome Completo" required>
-                <input type="text" name="usuario" placeholder="Login (ex: portaria1)" required>
+                <input type="text" name="nome" placeholder="Nome" required>
+                <input type="text" name="usuario" placeholder="Login" required>
                 <input type="text" name="senha" placeholder="Senha" required>
-                <input type="text" name="cargo" placeholder="Cargo (admin/portaria/bar)">
-                <input type="number" name="cachet" placeholder="Valor do Cachê R$" step="0.01">
-                <button type="submit" class="btn">Cadastrar Funcionário</button>
+                <input type="text" name="cargo" placeholder="Cargo (portaria/bar)">
+                <input type="number" name="cachet" placeholder="Cachê R$" step="0.01">
+                <button type="submit" class="btn">Salvar Funcionário</button>
             </form>
         </div>
 
         <div class="card">
-            <h3>Adicionar ao Bar</h3>
+            <h3>🍺 Gestão de Estoque/Bar</h3>
             <form method="POST">
-                <input type="hidden" name="add_produto" value="1">
-                <input type="text" name="nome" placeholder="Nome da Bebida/Item" required>
-                <input type="number" name="custo" placeholder="Preço de Custo" step="0.01">
-                <input type="number" name="venda" placeholder="Preço de Venda" step="0.01">
-                <input type="number" name="estoque" placeholder="Quantidade em Estoque">
-                <button type="submit" class="btn">Salvar no Estoque</button>
-            </form>
-        </div>
-    </div>
-
-    <div class="card" style="margin-top: 20px;">
-        <h3>Equipe Cadastrada</h3>
-        <table>
-            <thead><tr><th>Nome</th><th>Cargo</th><th>Login</th><th>Cachê</th></tr></thead>
-            <tbody>
-                {% for f in equipe %}
-                <tr><td>{{ f.nome }}</td><td>{{ f.cargo }}</td><td>{{ f.usuario }}</td><td>R$ {{ "%.2f"|format(f.cachet) }}</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</body>
-</html>
+                <input type="hidden" name="
