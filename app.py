@@ -1,14 +1,14 @@
-import os, re, mercadopago
+import os, mercadopago
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
 
 app = Flask(__name__)
 
-# --- CONFIGURAÇÃO ---
+# --- CONFIGURAÇÃO (Puxando do seu Render) ---
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key = os.getenv("SECRET_KEY")
+app.secret_key = os.getenv("SECRET_KEY", "BAFAFA_2026_SEGURANCA")
 
 db = SQLAlchemy(app)
 sdk = mercadopago.SDK(os.getenv("MP_ACCESS_TOKEN"))
@@ -29,20 +29,20 @@ class Produto(db.Model):
     preco_custo = db.Column(db.Float, default=0.0); preco_venda = db.Column(db.Float, default=0.0)
     estoque = db.Column(db.Integer, default=0); vendidos = db.Column(db.Integer, default=0)
 
-# --- INICIALIZAÇÃO (Reset controlado) ---
+# --- INICIALIZAÇÃO ---
 with app.app_context():
     db.create_all()
     if not Equipe.query.filter_by(usuario='wagner').first():
         db.session.add(Equipe(nome='Wagner Master', usuario='wagner', senha='123', cargo='admin', cachet=0))
         db.session.commit()
 
-# --- ROTAS ---
+# --- ROTAS SINCRONIZADAS COM OS TEMPLATES ---
 @app.route('/')
 def index(): return render_template('index.html')
 
 @app.route('/reservar', methods=['POST'])
 def reservar():
-    c = Cliente(nome=request.form.get('nome').upper().strip(), telefone=request.form.get('telefone'))
+    c = Cliente(nome=request.form.get('nome', '').upper().strip(), telefone=request.form.get('telefone', ''))
     db.session.add(c); db.session.commit()
     return redirect(url_for('pagamento', id=c.id))
 
@@ -113,6 +113,10 @@ def admin_total():
     c_staff = db.session.query(func.sum(Equipe.cachet)).scalar() or 0
     fin = {"receita": ingressos + v_bar, "despesas": c_staff, "lucro": (ingressos + v_bar) - c_staff}
     return render_template('admin_total.html', equipe=Equipe.query.all(), produtos=Produto.query.all(), clientes=Cliente.query.all(), fin=fin)
+
+@app.route('/logout')
+def logout():
+    session.clear(); return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)

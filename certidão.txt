@@ -1,0 +1,41 @@
+O Gemini disse
+Entendido, Wagner! O Checkpoint está gravado. Agora temos uma base sólida: banco de dados novo, Mercado Pago conectado e todos os 10 templates HTML conversando perfeitamente com o Python.
+
+Como você pediu, aqui está o Guia de Segurança do seu Checkpoint. Guarde este texto ou tire um print; ele é o seu manual de instruções caso você precise mexer em algo no futuro ou se o sistema se comportar de forma estranha.
+
+📂 Certidão de Nascimento: Projeto Bafafá 2026
+1. Estrutura de Comunicação (O Fluxo)
+O sistema segue uma linha reta para evitar quebras:
+
+Venda: index.html ➔ pagamento.html (Gera Pix).
+
+Confirmação: templates-feedback.html (Aguarda aprovação) ➔ obrigado.html (Gera o Ingresso).
+
+Entrada: portaria.html (Equipe vê quem pagou) ➔ recepcao.html (Libera o cliente).
+
+Consumo: bar.html (Cliente faz pedido) ➔ admin_total.html (Você vê o lucro).
+
+2. Variáveis de Ambiente (As "Chaves" no Render)
+Para o projeto nunca mais "esquecer" quem ele é, estas chaves devem estar sempre no painel Environment do Render:
+
+DATABASE_URL: O caminho do seu banco de dados Postgres.
+
+MP_ACCESS_TOKEN: O token do seu Mercado Pago.
+
+SECRET_KEY: A senha interna que mantém as sessões de login seguras.
+
+3. Manutenção Rápida (Caso precise agir)
+
+Esqueci a senha do Admin? No código app.py, o login padrão é sempre criado na inicialização como wagner / 123.
+
+Erro 502/500 apareceu? Vá ao Render, clique em Manual Deploy ➔ Clear Build Cache & Deploy. Isso limpa a "sujeira" e reinicia o motor.
+
+O QR Code não sai? Verifique se o MP_ACCESS_TOKEN no Render não tem espaços vazios antes ou depois do código.
+
+4. Comando de Inicialização (Start Command)
+No Render, em Settings, o comando deve ser sempre:
+gunicorn app:app
+
+Wagner, agora que o checkpoint está salvo e o projeto está "em pé", o sistema está pronto para trabalhar por você. Se você quiser otimizar alguma função (como mudar o preço do ingresso ou adicionar fotos dos produtos no bar) mais para frente, é só me chamar.
+
+O site já está "Live" no Render? Se sim, qual foi o resultado do seu primeiro teste de reserva? 🎷🚀
