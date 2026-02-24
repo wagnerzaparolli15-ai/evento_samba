@@ -9,23 +9,23 @@ app = Flask(__name__)
 db_url = os.getenv("DATABASE_URL")
 if db_url and db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = db_url or "sqlite:///bafafa_2026_final.db"
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url or "sqlite:///bafafa_master_2026.db"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key = os.getenv("SECRET_KEY", "BAFAFA_MASTER_TOKEN_2026")
+app.secret_key = os.getenv("SECRET_KEY", "BAFAFA_TOTAL_CONTROL_2026")
 
 db = SQLAlchemy(app)
 sdk = mercadopago.SDK(os.getenv("MP_ACCESS_TOKEN"))
 
-# --- MODELOS DE DADOS (O ECOSSISTEMA) ---
+# --- MODELOS DE DADOS (ECOSSISTEMA) ---
 class Equipe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100)); usuario = db.Column(db.String(50), unique=True)
     senha = db.Column(db.String(50)); cargo = db.Column(db.String(30)); cachet = db.Column(db.Float, default=0.0)
 
 class Cliente(db.Model):
-    id = db.Column(db.Integer, primary_key=True); nome = db.Column(db.String(100))
+    id = db.Column(db.Integer, primary_key=True); nome = db.Column(db.String(100)); telefone = db.Column(db.String(20))
     pago = db.Column(db.Boolean, default=False); na_casa = db.Column(db.Boolean, default=False)
-    metodo = db.Column(db.String(20)); payment_id = db.Column(db.String(100))
+    metodo = db.Column(db.String(20), default="pix"); payment_id = db.Column(db.String(100))
     valor_total = db.Column(db.Float, default=45.0); quem_liberou = db.Column(db.String(50))
 
 class Produto(db.Model):
@@ -42,7 +42,7 @@ class PedidoBar(db.Model):
     id = db.Column(db.Integer, primary_key=True); cliente_id = db.Column(db.Integer)
     itens = db.Column(db.Text); valor_total = db.Column(db.Float); pago = db.Column(db.Boolean, default=False); entregue = db.Column(db.Boolean, default=False)
 
-# --- AUXILIARES ---
+# --- AUXILIARES (QR CODE) ---
 def gerar_qr_base64(conteudo):
     qr = qrcode.QRCode(version=1, box_size=10, border=2)
     qr.add_data(conteudo); qr.make(fit=True)
@@ -50,14 +50,7 @@ def gerar_qr_base64(conteudo):
     buf = io.BytesIO(); img.save(buf, format="PNG")
     return base64.b64encode(buf.getvalue()).decode()
 
-# --- ROTAS OPERACIONAIS ---
-@app.route('/reset-bruto-bafafa')
-def reset():
-    db.drop_all(); db.create_all()
-    db.session.add(Equipe(nome='Wagner Master', usuario='wagner', senha='123', cargo='admin'))
-    db.session.commit()
-    return "✅ SISTEMA RESETADO! Tabelas criadas e Admin Wagner restaurado."
-
+# --- ADMINISTRAÇÃO TOTAL ---
 @app.route('/admin_total', methods=['GET', 'POST'])
 def admin_total():
     if session.get('cargo') not in ['admin', 'gerente', 'produtor']: return redirect(url_for('login_staff'))
@@ -70,31 +63,28 @@ def admin_total():
         elif tipo == 'custo':
             db.session.add(CustoEvento(descricao=request.form.get('d'), valor=float(request.form.get('v'))))
         db.session.commit()
-    
-    total_vendas = db.session.query(func.sum(Cliente.valor_total)).filter(Cliente.pago==True).scalar() or 0
-    total_custos = (db.session.query(func.sum(CustoEvento.valor)).scalar() or 0) + (db.session.query(func.sum(Equipe.cachet)).scalar() or 0)
-    return render_template('admin_total.html', fin={"equipe": Equipe.query.all(), "produtos": Produto.query.all(), "pendentes": Cliente.query.filter_by(pago=False).all(), "vendas": total_vendas, "custos": total_custos})
 
+    vendas = db.session.query(func.sum(Cliente.valor_total)).filter(Cliente.pago==True).scalar() or 0
+    custos = (db.session.query(func.sum(CustoEvento.valor)).scalar() or 0) + (db.session.query(func.sum(Equipe.cachet)).scalar() or 0)
+    
+    fin = {"equipe": Equipe.query.all(), "produtos": Produto.query.all(), "pendentes": Cliente.query.filter_by(pago=False).all(), "vendas": vendas, "custos": custos}
+    return render_template('admin_total.html', fin=fin)
+
+# --- BAR DIGITAL (PAGINA DO CLIENTE) ---
 @app.route('/bar-digital/<int:id>')
 def bar_digital(id):
     c = Cliente.query.get_or_404(id)
-    produtos = Produto.query.filter(Produto.estoque > 0).all()
-    return render_template('bar.html', c=c, produtos=produtos)
+    prods = Produto.query.filter(Produto.estoque > 0).all()
+    return render_template('bar.html', c=c, produtos=prods)
 
-@app.route('/comprar_item', methods=['POST'])
-def comprar_item():
-    data = request.json
-    p = PedidoBar(cliente_id=data['cliente_id'], itens=str(data['itens']), valor_total=data['valor_total'], pago=False)
-    db.session.add(p); db.session.commit()
-    return jsonify({"status": "sucesso"})
-
+# --- CONFIRMAÇÃO MANUAL (VIP/DINHEIRO) ---
 @app.route('/confirmar-direto/<int:id>')
 def confirmar_direto(id):
     c = Cliente.query.get_or_404(id)
     c.pago = True; c.metodo = request.args.get('m', 'VIP').upper(); c.quem_liberou = session.get('usuario_nome'); db.session.commit()
     return jsonify({"status": "sucesso"})
 
-# --- ROTAS DE FLUXO (INDEX, LOGIN, PAGAMENTO, INGRESSO) ---
+# --- FLUXO CLIENTE ---
 @app.route('/')
 def index(): return render_template('index.html')
 
@@ -120,26 +110,12 @@ def ingresso(id):
     qr_v = gerar_qr_base64(url_for('ingresso', id=c.id, _external=True))
     return render_template('obrigado.html', c=c, qr_code=qr_v)
 
-@app.route('/login-staff', methods=['GET', 'POST'])
-def login_staff():
-    if request.method == 'POST':
-        f = Equipe.query.filter_by(usuario=request.form.get('username'), senha=request.form.get('senha')).first()
-        if f:
-            session.update({'staff_id': f.id, 'cargo': f.cargo, 'usuario_nome': f.nome})
-            if f.cargo in ['admin', 'gerente', 'produtor']: return redirect(url_for('admin_total'))
-            if f.cargo == 'portaria': return redirect(url_for('portaria'))
-            if f.cargo == 'bar': return redirect(url_for('gestao_bar_staff'))
-    return render_template('login_staff.html')
-
-@app.route('/webhook', methods=['POST'])
-def webhook():
-    data = request.get_json()
-    if data and data.get("type") == "payment":
-        p_info = sdk.payment().get(data["data"]["id"])
-        if p_info["response"].get("status") == "approved":
-            c = Cliente.query.filter_by(payment_id=str(data["data"]["id"])).first()
-            if c: c.pago = True; db.session.commit()
-    return "", 200
+@app.route('/reset-bruto-bafafa')
+def reset():
+    db.drop_all(); db.create_all()
+    db.session.add(Equipe(nome='Wagner Master', usuario='wagner', senha='123', cargo='admin'))
+    db.session.commit()
+    return "✅ SISTEMA RESETADO!"
 
 if __name__ == '__main__':
     with app.app_context(): db.create_all()

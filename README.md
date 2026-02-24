@@ -1,46 +1,18 @@
-# Sistema de Gestão Bafafá 🎷
+# 🎷 Bafafá 2026 - Ecossistema de Gestão de Eventos
 
-Sistema completo para venda de ingressos via Pix, controle de portaria e gestão de bar para eventos.
+Este é um sistema completo para gestão de eventos, integrando venda de ingressos, automação de pagamentos via Mercado Pago, controle de staff (Portaria/Bar) e um Painel Administrativo estratégico com cálculo de lucro real.
 
----
+## 🚀 Funcionalidades Mestre
 
-## 🚀 Funcionalidades Principais
+1. **Venda de Ingressos**: Fluxo automatizado com geração de link de pagamento (Pix/Cartão).
+2. **Webhooks Mercado Pago**: Confirmação automática de pagamento sem intervenção humana.
+3. **Bar Digital**: Cardápio dinâmico para clientes com controle de estoque e preços via Admin.
+4. **Portaria Inteligente**: Check-in de clientes e validação de QR Code.
+5. **Painel Admin Master**: Controle de 8 setores (Financeiro, RH, Estoque, Custos, etc).
+6. **Liberação VIP/Manual**: Botões de ação rápida via AJAX (sem recarregar a página).
 
-- ✅ Venda de ingressos com integração ao Mercado Pago (Pix).
-- ✅ Geração automática de QR Code para pagamento.
-- ✅ Confirmação automática de pagamento.
-- ✅ Check-in na portaria.
-- ✅ Cardápio digital para pedidos pelo celular.
-- ✅ Painel administrativo com controle financeiro.
+## 🛠️ Como Instalar (Localmente)
 
----
-
-## 🛠️ Tecnologias Utilizadas
-
-- Python
-- Flask
-- SQLAlchemy
-- PostgreSQL (Render)
-- Mercado Pago SDK
-
----
-
-## ⚙️ Configuração no Render
-
-As chaves e credenciais **não ficam no código**.
-
-Elas devem ser configuradas em:
-
-Render Dashboard → Environment Variables
-
-Variáveis obrigatórias:
-
-- `DATABASE_URL`
-- `MP_ACCESS_TOKEN`
-- `SECRET_KEY`
-
----
-
-## ▶️ Como Executar Localmente
-
-1. Instale as dependências:
+1. Clone o repositório:
+   ```bash
+   git clone [https://github.com/wagnerzaparolli15-ai/evento_samba.git](https://github.com/wagnerzaparolli15-ai/evento_samba.git)
