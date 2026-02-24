@@ -11,7 +11,7 @@ if db_url and db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url or "sqlite:///bafafa_2026.db"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key = os.getenv("SECRET_KEY", "BAFAFA_CHAVE_MESTRA_2026")
+app.secret_key = os.getenv("SECRET_KEY", "BAFAFA_TOTAL_CONTROL_2026")
 
 db = SQLAlchemy(app)
 sdk = mercadopago.SDK(os.getenv("MP_ACCESS_TOKEN"))
@@ -44,7 +44,7 @@ def gerar_qr_base64(conteudo):
     buf = io.BytesIO(); img.save(buf, format="PNG")
     return base64.b64encode(buf.getvalue()).decode()
 
-# --- ROTAS CLIENTE ---
+# --- ROTAS DE OPERAÇÃO ---
 @app.route('/')
 def index(): return render_template('index.html')
 
@@ -64,13 +64,6 @@ def pagamento(id):
         return render_template('pagamento.html', c=c, qr_img=qr_img, tipo="pix")
     except: return "Erro MP - Verifique o Token no Render.", 500
 
-@app.route('/ingresso/<int:id>')
-def ingresso(id):
-    c = Cliente.query.get_or_404(id)
-    if not c.pago: return render_template('templates-feedback.html', c=c)
-    return render_template('obrigado.html', c=c)
-
-# --- ROTAS ADMIN E STAFF ---
 @app.route('/login-staff', methods=['GET', 'POST'])
 def login_staff():
     if request.method == 'POST':
@@ -98,7 +91,8 @@ def admin_total():
 @app.route('/portaria')
 def portaria():
     if session.get('cargo') not in ['admin', 'portaria']: return redirect(url_for('login_staff'))
-    return render_template('portaria.html', clientes=Cliente.query.filter_by(pago=True, na_casa=False).all())
+    clientes = Cliente.query.filter_by(pago=True, na_casa=False).all()
+    return render_template('portaria.html', clientes=clientes)
 
 @app.route('/validar-entrada/<int:id>')
 def validar_entrada(id):
