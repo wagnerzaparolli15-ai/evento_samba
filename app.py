@@ -5,7 +5,7 @@ from sqlalchemy import func
 
 app = Flask(__name__)
 
-# --- 1. CONFIGURAÇÃO (CONEXÃO E SEGURANÇA) ---
+# --- 1. CONFIGURAÇÃO (RENDER & POSTGRES) ---
 db_url = os.getenv("DATABASE_URL")
 if db_url and db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
@@ -14,12 +14,12 @@ if db_url and "sslmode" not in db_url:
 
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key = os.getenv("SECRET_KEY", "SISTEMA_BAFAFA_2026_MASTER_TOTAL")
+app.secret_key = os.getenv("SECRET_KEY", "SISTEMA_BAFAFA_2026_FINAL_MASTER")
 
 db = SQLAlchemy(app)
 sdk = mercadopago.SDK(os.getenv("MP_ACCESS_TOKEN"))
 
-# --- 2. MODELOS (TODA A ESTRUTURA QUE CRIAMOS) ---
+# --- 2. MODELOS (ESTRUTURA COMPLETA) ---
 class Equipe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100)); usuario = db.Column(db.String(50), unique=True)
@@ -28,23 +28,26 @@ class Equipe(db.Model):
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True); nome = db.Column(db.String(100)); telefone = db.Column(db.String(20))
     pago = db.Column(db.Boolean, default=False); na_casa = db.Column(db.Boolean, default=False)
-    metodo = db.Column(db.String(20), default="pix") # pix, dinheiro, cartao_manual
+    metodo = db.Column(db.String(20), default="pix") 
     payment_id = db.Column(db.String(100)); valor_total = db.Column(db.Float, default=45.0)
     quem_liberou = db.Column(db.String(50), default=""); hora_entrada = db.Column(db.String(20))
 
-class CustoEvento(db.Model): # Controle de Aluguel, Gelo, etc.
+class CustoEvento(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     descricao = db.Column(db.String(100)); valor = db.Column(db.Float, default=0.0)
 
-class Produto(db.Model): # Gestão do Bar
+class Produto(db.Model):
     id = db.Column(db.Integer, primary_key=True); nome = db.Column(db.String(100))
     preco_custo = db.Column(db.Float, default=0.0); preco_venda = db.Column(db.Float, default=0.0)
     estoque = db.Column(db.Integer, default=0); vendidos = db.Column(db.Integer, default=0)
 
 with app.app_context():
     db.create_all()
+    if not Equipe.query.filter_by(usuario='wagner').first():
+        db.session.add(Equipe(nome='Wagner Master', usuario='wagner', senha='123', cargo='admin'))
+        db.session.commit()
 
-# --- 3. BIBLIOTECA DE QR CODE LOCAL (ANTI-TRAVAMENTO) ---
+# --- 3. BIBLIOTECA DE QR CODE LOCAL ---
 def gerar_qr_base64(conteudo):
     qr = qrcode.QRCode(version=1, box_size=10, border=2)
     qr.add_data(conteudo)
@@ -54,16 +57,26 @@ def gerar_qr_base64(conteudo):
     img.save(buffered, format="PNG")
     return base64.b64encode(buffered.getvalue()).decode()
 
-# --- 4. ROTA DE EMERGÊNCIA (RESET DE BANCO) ---
+# --- 4. ROTA DE RESET (PARA LIMPEZA E ATUALIZAÇÃO DE COLUNAS) ---
 @app.route('/reset-bruto-bafafa')
 def reset_bruto():
-    db.drop_all()
-    db.create_all()
-    db.session.add(Equipe(nome='Wagner Master', usuario='wagner', senha='123', cargo='admin'))
-    db.session.commit()
-    return "<h1>BANCO RECONSTRUÍDO!</h1><p>Tabelas criadas do zero. Login 'wagner' restaurado.</p>"
+    try:
+        # Deletar dados de forma segura
+        db.session.query(CustoEvento).delete()
+        db.session.query(Produto).delete()
+        db.session.query(Cliente).delete()
+        db.session.query(Equipe).delete()
+        db.session.commit()
+        db.drop_all() # Agora sim, com o banco parado, limpamos a estrutura
+        db.create_all()
+        db.session.add(Equipe(nome='Wagner Master', usuario='wagner', senha='123', cargo='admin'))
+        db.session.commit()
+        return "<h1>✅ SISTEMA RESETADO!</h1><p>Tabelas recriadas. Login 'wagner' restaurado.</p>"
+    except Exception as e:
+        db.session.rollback()
+        return f"<h1>⚠️ Erro no Reset: {e}</h1>"
 
-# --- 5. FLUXO DO CLIENTE (VENDA E INGRESSO) ---
+# --- 5. FLUXO DE VENDAS ---
 @app.route('/')
 def index(): return render_template('index.html')
 
@@ -77,7 +90,7 @@ def reservar():
 def pagamento(id):
     c = Cliente.query.get_or_404(id)
     tipo = request.args.get('tipo', 'pix')
-    valor_f = 45.0 * 1.10 if tipo == 'card' else 45.0 # Taxa de 10% no cartão
+    valor_f = 45.0 * 1.10 if tipo == 'card' else 45.0
     try:
         res = sdk.payment().create({
             "transaction_amount": float(valor_f), "description": "Ingresso Bafafá",
@@ -88,7 +101,7 @@ def pagamento(id):
         c.payment_id = str(res["response"]["id"]); c.valor_total = valor_f; c.metodo = tipo
         db.session.commit()
         return render_template('pagamento.html', c=c, qr_img=qr_img, tipo=tipo)
-    except: return "Erro ao conectar com Mercado Pago.", 500
+    except: return "Erro MP", 500
 
 @app.route('/ingresso/<int:id>')
 def ingresso(id):
@@ -99,7 +112,7 @@ def ingresso(id):
             c.pago = True; db.session.commit()
     return render_template('obrigado.html', c=c, checkin_url=url_for('validar_entrada', id=c.id, _external=True))
 
-# --- 6. GESTÃO E PORTARIA (STAFF) ---
+# --- 6. GESTÃO E STAFF ---
 @app.route('/login-staff', methods=['GET', 'POST'])
 def login_staff():
     if request.method == 'POST':
@@ -125,7 +138,7 @@ def validar_entrada(id):
         c.hora_entrada = datetime.datetime.now().strftime("%H:%M"); db.session.commit()
     return render_template('recepcao.html', c=c)
 
-# --- 7. ADMINISTRAÇÃO ANALÍTICA TOTAL ---
+# --- 7. ADMINISTRAÇÃO TOTAL ---
 @app.route('/admin_total', methods=['GET', 'POST'])
 def admin_total():
     if session.get('cargo') != 'admin': return redirect(url_for('login_staff'))
@@ -139,19 +152,14 @@ def admin_total():
         db.session.commit()
 
     prods = Produto.query.all()
-    # Soma de vendas real com proteção contra erro 500
     try:
         rec_ingressos = db.session.query(func.sum(Cliente.valor_total)).filter(Cliente.pago == True).scalar() or 0
     except: rec_ingressos = 0
     
     rec_bar = sum([p.preco_venda * p.vendidos for p in prods])
-    custos_fixos = (db.session.query(func.sum(CustoEvento.valor)).scalar() or 0) + (db.session.query(func.sum(Equipe.cachet)).scalar() or 0)
+    custo_total = (db.session.query(func.sum(CustoEvento.valor)).scalar() or 0) + (db.session.query(func.sum(Equipe.cachet)).scalar() or 0)
     
-    fin = {
-        "lucro": (rec_ingressos + rec_bar) - custos_fixos,
-        "na_casa": Cliente.query.filter_by(na_casa=True).count(),
-        "pendentes": Cliente.query.filter_by(pago=False).all()
-    }
+    fin = {"lucro": (rec_ingressos + rec_bar) - custo_total, "na_casa": Cliente.query.filter_by(na_casa=True).count(), "pendentes": Cliente.query.filter_by(pago=False).all()}
     return render_template('admin_total.html', fin=fin, produtos=prods, equipe=Equipe.query.all(), custos=CustoEvento.query.all())
 
 if __name__ == '__main__':
