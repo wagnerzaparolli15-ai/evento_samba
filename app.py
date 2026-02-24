@@ -5,10 +5,10 @@ from sqlalchemy import func
 
 app = Flask(__name__)
 
-# --- CONFIGURAÇÃO (Puxando do seu Render) ---
+# --- CONFIGURAÇÃO (Puxando do Render) ---
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key = os.getenv("SECRET_KEY", "BAFAFA_2026_SEGURANCA")
+app.secret_key = os.getenv("SECRET_KEY", "BAFAFA_MASTER_2026")
 
 db = SQLAlchemy(app)
 sdk = mercadopago.SDK(os.getenv("MP_ACCESS_TOKEN"))
@@ -36,7 +36,7 @@ with app.app_context():
         db.session.add(Equipe(nome='Wagner Master', usuario='wagner', senha='123', cargo='admin', cachet=0))
         db.session.commit()
 
-# --- ROTAS SINCRONIZADAS COM OS TEMPLATES ---
+# --- ROTAS ---
 @app.route('/')
 def index(): return render_template('index.html')
 
@@ -49,10 +49,12 @@ def reservar():
 @app.route('/pagamento/<int:id>')
 def pagamento(id):
     c = Cliente.query.get_or_404(id)
-    res = sdk.payment().create({"transaction_amount": 45.0, "description": "Ingresso Bafafá", "payment_method_id": "pix", "payer": {"email": "vendas@bafafa.com"}})
-    pix = res["response"]["point_of_interaction"]["transaction_data"]
-    c.payment_id = str(res["response"]["id"]); db.session.commit()
-    return render_template('pagamento.html', c=c, pix_codigo=pix["qr_code"], qrcode_base64=pix["qr_code_base64"])
+    try:
+        res = sdk.payment().create({"transaction_amount": 45.0, "description": "Ingresso Bafafá", "payment_method_id": "pix", "payer": {"email": "vendas@bafafa.com"}})
+        pix = res["response"]["point_of_interaction"]["transaction_data"]
+        c.payment_id = str(res["response"]["id"]); db.session.commit()
+        return render_template('pagamento.html', c=c, pix_codigo=pix["qr_code"], qrcode_base64=pix["qr_code_base64"])
+    except: return "Erro ao gerar PIX. Verifique seu Token no Render."
 
 @app.route('/ingresso/<int:id>')
 def ingresso(id):
@@ -89,34 +91,12 @@ def bar_digital(id):
     c = Cliente.query.get_or_404(id)
     return render_template('bar.html', c=c, produtos=Produto.query.filter(Produto.estoque > 0).all())
 
-@app.route('/comprar_item', methods=['POST'])
-def comprar_item():
-    data = request.json
-    for item in data.get('itens', []):
-        p = Produto.query.get(item['id'])
-        if p: p.estoque -= 1; p.vendidos += 1
-    db.session.commit()
-    return jsonify({"status": "success"})
-
-@app.route('/admin_total', methods=['GET', 'POST'])
+@app.route('/admin_total')
 def admin_total():
-    if session.get('cargo') != 'admin': return redirect(url_for('login_staff'))
-    if request.method == 'POST':
-        if 'novo_staff' in request.form:
-            db.session.add(Equipe(nome=request.form.get('nome'), usuario=request.form.get('user'), senha=request.form.get('pass'), cargo=request.form.get('cargo'), cachet=float(request.form.get('cachet') or 0)))
-        if 'id_prod' in request.form:
-            p = Produto.query.get(request.form.get('id_prod'))
-            p.preco_custo, p.preco_venda, p.estoque = float(request.form.get('custo')), float(request.form.get('venda')), int(request.form.get('estoque'))
-        db.session.commit()
-    ingressos = db.session.query(func.count(Cliente.id)).filter(Cliente.pago == True).scalar() * 45.0
+    ingressos = db.session.query(func.count(Cliente.id)).filter(Cliente.pago == True).scalar() or 0
     v_bar = sum([p.preco_venda * p.vendidos for p in Produto.query.all()])
-    c_staff = db.session.query(func.sum(Equipe.cachet)).scalar() or 0
-    fin = {"receita": ingressos + v_bar, "despesas": c_staff, "lucro": (ingressos + v_bar) - c_staff}
+    fin = {"receita": (ingressos * 45.0) + v_bar, "lucro": (ingressos * 45.0) + v_bar}
     return render_template('admin_total.html', equipe=Equipe.query.all(), produtos=Produto.query.all(), clientes=Cliente.query.all(), fin=fin)
-
-@app.route('/logout')
-def logout():
-    session.clear(); return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
