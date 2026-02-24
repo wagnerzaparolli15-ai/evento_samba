@@ -9,14 +9,14 @@ app = Flask(__name__)
 db_url = os.getenv("DATABASE_URL")
 if db_url and db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = db_url or "sqlite:///bafafa_total.db"
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url or "sqlite:///bafafa_final.db"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key = os.getenv("SECRET_KEY", "BAFAFA_TOTAL_2026")
+app.secret_key = os.getenv("SECRET_KEY", "BAFAFA_MASTER_2026_FINAL")
 
 db = SQLAlchemy(app)
 sdk = mercadopago.SDK(os.getenv("MP_ACCESS_TOKEN"))
 
-# --- MODELOS (BANCO DE DADOS) ---
+# --- MODELOS (BANCO DE DADOS COMPLETO) ---
 class Equipe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100)); usuario = db.Column(db.String(50), unique=True)
@@ -42,8 +42,16 @@ class PedidoBar(db.Model):
     itens = db.Column(db.Text); valor_total = db.Column(db.Float); pago = db.Column(db.Boolean, default=False)
     entregue = db.Column(db.Boolean, default=False); qrcode_pedido = db.Column(db.String(100))
 
-with app.app_context():
+# --- ROTA DE RESET (CORRIGIDA) ---
+@app.route('/reset-bruto-bafafa')
+def reset_bruto():
+    db.drop_all()
     db.create_all()
+    # Recria o Wagner como Admin
+    if not Equipe.query.filter_by(usuario='wagner').first():
+        db.session.add(Equipe(nome='Wagner Master', usuario='wagner', senha='123', cargo='admin'))
+        db.session.commit()
+    return "<h1>✅ SISTEMA RESETADO COM SUCESSO!</h1><p>Tabelas recriadas. Login 'wagner' restaurado.</p>"
 
 # --- AUXILIARES ---
 def gerar_qr_base64(conteudo):
@@ -55,21 +63,18 @@ def gerar_qr_base64(conteudo):
     img.save(buffered, format="PNG")
     return base64.b64encode(buffered.getvalue()).decode()
 
-# --- WEBHOOK (BAIXA AUTOMÁTICA) ---
+# --- WEBHOOK ---
 @app.route('/webhook', methods=['POST'])
 def webhook():
     data = request.get_json()
     if data and data.get("type") == "payment":
-        payment_id = data["data"]["id"]
-        payment_info = sdk.payment().get(payment_id)
+        payment_info = sdk.payment().get(data["data"]["id"])
         if payment_info["response"].get("status") == "approved":
-            c = Cliente.query.filter_by(payment_id=str(payment_id)).first()
+            c = Cliente.query.filter_by(payment_id=str(data["data"]["id"])).first()
             if c: c.pago = True; db.session.commit()
-            p = PedidoBar.query.filter_by(qrcode_pedido=str(payment_id)).first()
-            if p: p.pago = True; db.session.commit()
     return "", 200
 
-# --- ROTAS CLIENTE ---
+# --- ROTAS PRINCIPAIS ---
 @app.route('/')
 def index(): return render_template('index.html')
 
@@ -97,16 +102,13 @@ def ingresso(id):
     if not c.pago: return render_template('templates-feedback.html', c=c)
     return render_template('obrigado.html', c=c)
 
-# --- ROTAS STAFF / ADMIN ---
 @app.route('/login-staff', methods=['GET', 'POST'])
 def login_staff():
     if request.method == 'POST':
         f = Equipe.query.filter_by(usuario=request.form.get('username'), senha=request.form.get('senha')).first()
         if f:
             session.update({'staff_id': f.id, 'cargo': f.cargo, 'usuario_nome': f.nome})
-            if f.cargo == 'admin': return redirect(url_for('admin_total'))
-            if f.cargo == 'portaria': return redirect(url_for('portaria'))
-            if f.cargo == 'bar': return redirect(url_for('gestao_bar_staff'))
+            return redirect(url_for('admin_total'))
     return render_template('login_staff.html')
 
 @app.route('/admin_total', methods=['GET', 'POST'])
@@ -123,16 +125,6 @@ def admin_total():
            "na_casa": Cliente.query.filter_by(na_casa=True).count(),
            "pendentes": Cliente.query.filter_by(pago=False).all()}
     return render_template('admin_total.html', fin=fin, produtos=Produto.query.all())
-
-@app.route('/validar-entrada/<int:id>')
-def validar_entrada(id):
-    c = Cliente.query.get_or_404(id)
-    c.na_casa = True; c.hora_entrada = datetime.datetime.now().strftime("%H:%M"); db.session.commit()
-    return render_template('recepcao.html', c=c)
-
-@app.route('/bar-digital/<int:id>')
-def bar_digital(id):
-    return render_template('bar.html', c=Cliente.query.get_or_404(id), produtos=Produto.query.all())
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))

@@ -1,83 +1,72 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Master Admin - Bafafá</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #050505; color: #fff; padding: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px; }
-        .card { background: #111; padding: 20px; border-radius: 15px; border: 1px solid #222; }
-        .lucro { font-size: 35px; color: #00ff88; font-weight: bold; }
-        .btn { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
-        input, select { width: 100%; padding: 12px; margin: 5px 0; background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 8px; box-sizing: border-box; }
-        table { width: 100%; margin-top: 20px; border-collapse: collapse; }
-        th, td { padding: 10px; border-bottom: 1px solid #222; text-align: left; }
+        body { font-family: 'Segoe UI', sans-serif; background: #050505; color: #fff; margin: 0; padding: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .card { background: #111; padding: 25px; border-radius: 20px; border: 1px solid #222; }
+        .lucro { font-size: 38px; color: #00ff88; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; border-bottom: 1px solid #222; text-align: left; }
+        .btn { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 5px; }
+        input { width: 100%; padding: 10px; margin: 5px 0; background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 5px; box-sizing: border-box; }
     </style>
 </head>
 <body>
-    <h1 style="color:#00d4ff;">🛡️ Gestão Analítica Bafafá 2026</h1>
+    <h1 style="text-align: center; color: #00d4ff;">🛡️ Gestão Analítica Bafafá 2026</h1>
 
     <div class="grid">
         <div class="card">
             <h3>💰 Lucro Líquido Real</h3>
             <div class="lucro">R$ {{ "%.2f"|format(fin.lucro) }}</div>
-            <p>Pessoas no Evento: {{ fin.na_casa }}</p>
+            <p>Pessoas no Evento: <strong>{{ fin.na_casa }}</strong></p>
         </div>
 
         <div class="card">
-            <h3>👥 Cadastrar Equipe</h3>
-            <form method="POST">
-                <input type="hidden" name="add_func" value="1">
-                <input type="text" name="n" placeholder="Nome" required>
-                <input type="text" name="u" placeholder="Login" required>
-                <input type="password" name="s" placeholder="Senha" required>
-                <select name="c">
-                    <option value="portaria">Portaria</option>
-                    <option value="bar">Bar</option>
-                    <option value="admin">Administrador</option>
-                </select>
-                <input type="number" name="v" placeholder="Cachê R$" step="0.01">
-                <button type="submit" class="btn" style="background:#00d4ff; color:#000;">SALVAR</button>
-            </form>
-        </div>
-
-        <div class="card">
-            <h3>🍺 Bar e Estoque</h3>
-            <form method="POST">
-                <input type="hidden" name="add_prod" value="1">
-                <input type="text" name="n" placeholder="Produto (Ex: Cerveja, Feijoada)" required>
-                <input type="number" name="c" placeholder="Custo Un." step="0.01">
-                <input type="number" name="v" placeholder="Venda Un." step="0.01">
-                <input type="number" name="e" placeholder="Qtd Estoque">
-                <button type="submit" class="btn" style="background:#00ff88; color:#000;">CADASTRAR</button>
-            </form>
-        </div>
-
-        <div class="card">
-            <h3>💸 Custos (Mercado/Aluguel)</h3>
+            <h3>💸 Lançar Despesa (Fixos/Extras)</h3>
             <form method="POST">
                 <input type="hidden" name="add_custo" value="1">
-                <input type="text" name="d" placeholder="Descrição" required>
-                <input type="number" name="v" placeholder="Valor Gasto" step="0.01" required>
-                <button type="submit" class="btn" style="background:#6200ee; color:#fff;">LANÇAR</button>
+                <input type="text" name="d" placeholder="Descrição (Ex: Gelo, Aluguel)" required>
+                <input type="number" name="v" placeholder="Valor R$" step="0.01" required>
+                <button type="submit" class="btn" style="background:#6200ee; color:#fff;">REGISTRAR GASTO</button>
+            </form>
+        </div>
+        
+        <div class="card">
+            <h3>🍺 Cadastrar Produto Bar</h3>
+            <form method="POST">
+                <input type="hidden" name="add_prod" value="1">
+                <input type="text" name="n" placeholder="Nome do Produto" required>
+                <input type="number" name="c" placeholder="Custo R$" step="0.01">
+                <input type="number" name="v" placeholder="Venda R$" step="0.01">
+                <input type="number" name="e" placeholder="Qtd Estoque">
+                <button type="submit" class="btn" style="background:#00ff88; color:#000;">SALVAR NO BAR</button>
             </form>
         </div>
     </div>
 
-    <div class="card" style="margin-top:20px; border: 2px solid #ffcc00;">
-        <h3>🟡 Confirmação Wagner (Alternativa)</h3>
+    <div class="card" style="margin-top: 20px; border-color: #ffcc00;">
+        <h3 style="color: #ffcc00;">⚠️ Liberação Manual Wagner</h3>
         <table>
-            <thead><tr><th>Nome</th><th>Valor</th><th>Ação</th></tr></thead>
+            <thead><tr><th>Nome</th><th>Ações</th></tr></thead>
             <tbody>
                 {% for c in fin.pendentes %}
                 <tr>
                     <td>{{ c.nome }}</td>
-                    <td>R$ {{ c.valor_total }}</td>
-                    <td><a href="/confirmar-manual-admin/{{ c.id }}" class="btn" style="background:#28a745; padding:5px 10px; width:auto;">CONFIRMAR PIX</a></td>
+                    <td>
+                        <a href="/confirmar-manual-admin/{{ c.id }}" class="btn" style="background:#ffcc00; color:#000; text-decoration:none; padding:5px 10px;"> CONFIRMAR </a>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+
+    <div style="margin-top: 50px; text-align: center;">
+        <a href="/reset-bruto-bafafa" style="color: #ff4444; text-decoration: none;">🔴 RESET BRUTO DO SISTEMA</a>
     </div>
 </body>
 </html>
