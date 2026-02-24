@@ -9,23 +9,23 @@ app = Flask(__name__)
 db_url = os.getenv("DATABASE_URL")
 if db_url and db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = db_url or "sqlite:///bafafa_total_2026.db"
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url or "sqlite:///bafafa_2026_final.db"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key = os.getenv("SECRET_KEY", "BAFAFA_MASTER_2026_TOTAL")
+app.secret_key = os.getenv("SECRET_KEY", "BAFAFA_MASTER_TOKEN_2026")
 
 db = SQLAlchemy(app)
 sdk = mercadopago.SDK(os.getenv("MP_ACCESS_TOKEN"))
 
-# --- MODELOS DE DADOS (ECOSSISTEMA COMPLETO) ---
+# --- MODELOS DE DADOS (O ECOSSISTEMA) ---
 class Equipe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100)); usuario = db.Column(db.String(50), unique=True)
     senha = db.Column(db.String(50)); cargo = db.Column(db.String(30)); cachet = db.Column(db.Float, default=0.0)
 
 class Cliente(db.Model):
-    id = db.Column(db.Integer, primary_key=True); nome = db.Column(db.String(100)); telefone = db.Column(db.String(20))
+    id = db.Column(db.Integer, primary_key=True); nome = db.Column(db.String(100))
     pago = db.Column(db.Boolean, default=False); na_casa = db.Column(db.Boolean, default=False)
-    metodo = db.Column(db.String(20), default="pix"); payment_id = db.Column(db.String(100))
+    metodo = db.Column(db.String(20)); payment_id = db.Column(db.String(100))
     valor_total = db.Column(db.Float, default=45.0); quem_liberou = db.Column(db.String(50))
 
 class Produto(db.Model):
@@ -34,70 +34,67 @@ class Produto(db.Model):
     preco_custo = db.Column(db.Float, default=0.0); preco_venda = db.Column(db.Float, default=0.0)
     estoque = db.Column(db.Integer, default=0)
 
-class PedidoBar(db.Model):
-    id = db.Column(db.Integer, primary_key=True); cliente_id = db.Column(db.Integer)
-    itens = db.Column(db.Text); valor_total = db.Column(db.Float); pago = db.Column(db.Boolean, default=False)
-    entregue = db.Column(db.Boolean, default=False)
-
 class CustoEvento(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     descricao = db.Column(db.String(100)); valor = db.Column(db.Float, default=0.0)
 
-# --- AUXILIARES (QR CODE) ---
+class PedidoBar(db.Model):
+    id = db.Column(db.Integer, primary_key=True); cliente_id = db.Column(db.Integer)
+    itens = db.Column(db.Text); valor_total = db.Column(db.Float); pago = db.Column(db.Boolean, default=False); entregue = db.Column(db.Boolean, default=False)
+
+# --- AUXILIARES ---
 def gerar_qr_base64(conteudo):
     qr = qrcode.QRCode(version=1, box_size=10, border=2)
     qr.add_data(conteudo); qr.make(fit=True)
     img = qr.make_image(fill_color="black", back_color="white")
-    buffered = io.BytesIO(); img.save(buffered, format="PNG")
-    return base64.b64encode(buffered.getvalue()).decode()
+    buf = io.BytesIO(); img.save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode()
 
-# --- ROTAS DE GESTÃO ---
+# --- ROTAS OPERACIONAIS ---
 @app.route('/reset-bruto-bafafa')
-def reset_bruto():
+def reset():
     db.drop_all(); db.create_all()
     db.session.add(Equipe(nome='Wagner Master', usuario='wagner', senha='123', cargo='admin'))
     db.session.commit()
-    return "✅ SISTEMA RESETADO! Tudo consolidado."
+    return "✅ SISTEMA RESETADO! Tabelas criadas e Admin Wagner restaurado."
 
-# --- ADMIN TOTAL (8 SEÇÕES) ---
 @app.route('/admin_total', methods=['GET', 'POST'])
 def admin_total():
     if session.get('cargo') not in ['admin', 'gerente', 'produtor']: return redirect(url_for('login_staff'))
-    
     if request.method == 'POST':
-        f_tipo = request.form.get('form_tipo')
-        if f_tipo == 'produto':
+        tipo = request.form.get('form_tipo')
+        if tipo == 'produto':
             db.session.add(Produto(nome=request.form.get('n'), preco_custo=float(request.form.get('pc')), preco_venda=float(request.form.get('pv')), estoque=int(request.form.get('e')), imagem=request.form.get('img')))
-        elif f_tipo == 'equipe':
+        elif tipo == 'equipe':
             db.session.add(Equipe(nome=request.form.get('n'), usuario=request.form.get('u'), senha=request.form.get('s'), cargo=request.form.get('c'), cachet=float(request.form.get('v'))))
-        elif f_tipo == 'custo':
+        elif tipo == 'custo':
             db.session.add(CustoEvento(descricao=request.form.get('d'), valor=float(request.form.get('v'))))
         db.session.commit()
-
+    
     total_vendas = db.session.query(func.sum(Cliente.valor_total)).filter(Cliente.pago==True).scalar() or 0
     total_custos = (db.session.query(func.sum(CustoEvento.valor)).scalar() or 0) + (db.session.query(func.sum(Equipe.cachet)).scalar() or 0)
-    
-    context = {
-        "equipe": Equipe.query.all(), "produtos": Produto.query.all(), "pendentes": Cliente.query.filter_by(pago=False).all(),
-        "total_vendas": total_vendas, "total_custos": total_custos, "pedidos_bar": PedidoBar.query.filter_by(entregue=False).all()
-    }
-    return render_template('admin_total.html', fin=context)
+    return render_template('admin_total.html', fin={"equipe": Equipe.query.all(), "produtos": Produto.query.all(), "pendentes": Cliente.query.filter_by(pago=False).all(), "vendas": total_vendas, "custos": total_custos})
 
-# --- BAR DIGITAL (ALIMENTADO PELO ADMIN) ---
 @app.route('/bar-digital/<int:id>')
 def bar_digital(id):
     c = Cliente.query.get_or_404(id)
     produtos = Produto.query.filter(Produto.estoque > 0).all()
     return render_template('bar.html', c=c, produtos=produtos)
 
-# --- CONFIRMAÇÃO MANUAL (VIP/DINHEIRO) ---
+@app.route('/comprar_item', methods=['POST'])
+def comprar_item():
+    data = request.json
+    p = PedidoBar(cliente_id=data['cliente_id'], itens=str(data['itens']), valor_total=data['valor_total'], pago=False)
+    db.session.add(p); db.session.commit()
+    return jsonify({"status": "sucesso"})
+
 @app.route('/confirmar-direto/<int:id>')
 def confirmar_direto(id):
     c = Cliente.query.get_or_404(id)
     c.pago = True; c.metodo = request.args.get('m', 'VIP').upper(); c.quem_liberou = session.get('usuario_nome'); db.session.commit()
     return jsonify({"status": "sucesso"})
 
-# --- FLUXO DO CLIENTE ---
+# --- ROTAS DE FLUXO (INDEX, LOGIN, PAGAMENTO, INGRESSO) ---
 @app.route('/')
 def index(): return render_template('index.html')
 
