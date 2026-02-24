@@ -1,63 +1,62 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Master Admin - Bafafá</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #050505; color: #fff; margin: 0; padding: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .card { background: #111; padding: 25px; border-radius: 20px; border: 1px solid #222; }
-        .lucro { font-size: 38px; color: #00ff88; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { padding: 12px; border-bottom: 1px solid #222; text-align: left; }
-        .btn { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 5px; }
-        input { width: 100%; padding: 10px; margin: 5px 0; background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 5px; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #050505; color: #fff; padding: 20px; }
+        .logo-header { width: 80px; border-radius: 50%; border: 2px solid #f1c40f; margin-bottom: 10px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px; }
+        .card { background: #111; padding: 20px; border-radius: 15px; border: 1px solid #222; }
+        .btn { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; color: #000; }
+        input, select { width: 100%; padding: 12px; margin: 5px 0; background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 8px; box-sizing: border-box; }
+        table { width: 100%; margin-top: 20px; border-collapse: collapse; }
+        th, td { padding: 10px; border-bottom: 1px solid #222; text-align: left; }
     </style>
 </head>
 <body>
-    <h1 style="text-align: center; color: #00d4ff;">🛡️ Gestão Analítica Bafafá 2026</h1>
+    <center><img src="/static/logo.png" class="logo-header"><h1>Gestão Bafafá 2026</h1></center>
 
     <div class="grid">
         <div class="card">
-            <h3>💰 Lucro Líquido Real</h3>
-            <div class="lucro">R$ {{ "%.2f"|format(fin.lucro) }}</div>
-            <p>Pessoas no Evento: <strong>{{ fin.na_casa }}</strong></p>
+            <h3>💰 Receita de Ingressos</h3>
+            <div style="font-size: 32px; color:#00ff88;">R$ {{ "%.2f"|format(fin.lucro) }}</div>
         </div>
 
         <div class="card">
-            <h3>💸 Lançar Despesa (Fixos/Extras)</h3>
+            <h3>👥 Cadastrar Equipe / Staff</h3>
             <form method="POST">
-                <input type="hidden" name="add_custo" value="1">
-                <input type="text" name="d" placeholder="Descrição (Ex: Gelo, Aluguel)" required>
-                <input type="number" name="v" placeholder="Valor R$" step="0.01" required>
-                <button type="submit" class="btn" style="background:#6200ee; color:#fff;">REGISTRAR GASTO</button>
-            </form>
-        </div>
-        
-        <div class="card">
-            <h3>🍺 Cadastrar Produto Bar</h3>
-            <form method="POST">
-                <input type="hidden" name="add_prod" value="1">
-                <input type="text" name="n" placeholder="Nome do Produto" required>
-                <input type="number" name="c" placeholder="Custo R$" step="0.01">
-                <input type="number" name="v" placeholder="Venda R$" step="0.01">
-                <input type="number" name="e" placeholder="Qtd Estoque">
-                <button type="submit" class="btn" style="background:#00ff88; color:#000;">SALVAR NO BAR</button>
+                <input type="hidden" name="add_staff" value="1">
+                <input type="text" name="n" placeholder="Nome" required>
+                <input type="text" name="u" placeholder="Login" required>
+                <input type="password" name="s" placeholder="Senha" required>
+                <select name="c">
+                    <option value="admin">Administrador</option>
+                    <option value="gerente">Gerente</option>
+                    <option value="produtor">Produtor</option>
+                    <option value="portaria">Portaria</option>
+                    <option value="bar">Bar</option>
+                    <option value="seguranca">Segurança (Registro)</option>
+                    <option value="limpeza">Limpeza (Registro)</option>
+                    <option value="musico">Músico (Registro)</option>
+                </select>
+                <input type="number" name="v" placeholder="Cachê R$" step="0.01">
+                <button type="submit" class="btn" style="background:#f1c40f;">CADASTRAR</button>
             </form>
         </div>
     </div>
 
-    <div class="card" style="margin-top: 20px; border-color: #ffcc00;">
-        <h3 style="color: #ffcc00;">⚠️ Liberação Manual Wagner</h3>
+    <div class="card" style="margin-top:20px; border: 1px solid #f1c40f;">
+        <h3>⚡ Liberação Manual Imediata</h3>
         <table>
             <thead><tr><th>Nome</th><th>Ações</th></tr></thead>
             <tbody>
                 {% for c in fin.pendentes %}
-                <tr>
+                <tr id="linha-{{ c.id }}">
                     <td>{{ c.nome }}</td>
                     <td>
-                        <a href="/confirmar-manual-admin/{{ c.id }}" class="btn" style="background:#ffcc00; color:#000; text-decoration:none; padding:5px 10px;"> CONFIRMAR </a>
+                        <button onclick="liberar({{ c.id }}, 'vip')" style="background:#6200ee; color:#fff; padding:8px; border-radius:5px; border:none; cursor:pointer;">💎 VIP</button>
+                        <button onclick="liberar({{ c.id }}, 'dinheiro')" style="background:#28a745; color:#fff; padding:8px; border-radius:5px; border:none; cursor:pointer;">💵 R$</button>
                     </td>
                 </tr>
                 {% endfor %}
@@ -65,8 +64,16 @@
         </table>
     </div>
 
-    <div style="margin-top: 50px; text-align: center;">
-        <a href="/reset-bruto-bafafa" style="color: #ff4444; text-decoration: none;">🔴 RESET BRUTO DO SISTEMA</a>
-    </div>
+    <script>
+    function liberar(id, tipo) {
+        fetch(`/confirmar-direto/${id}?m=${tipo}`)
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'sucesso') {
+                document.getElementById(`linha-${id}`).remove();
+            }
+        });
+    }
+    </script>
 </body>
 </html>
