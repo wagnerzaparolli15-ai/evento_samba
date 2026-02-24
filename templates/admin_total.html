@@ -1,79 +1,33 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Admin - Bafafá</title>
-    <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #050505; color: #fff; padding: 20px; }
-        .logo-header { width: 80px; border-radius: 50%; border: 2px solid #f1c40f; margin-bottom: 10px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px; }
-        .card { background: #111; padding: 20px; border-radius: 15px; border: 1px solid #222; }
-        .btn { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; color: #000; }
-        input, select { width: 100%; padding: 12px; margin: 5px 0; background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 8px; box-sizing: border-box; }
-        table { width: 100%; margin-top: 20px; border-collapse: collapse; }
-        th, td { padding: 10px; border-bottom: 1px solid #222; text-align: left; }
-    </style>
-</head>
-<body>
-    <center><img src="/static/logo.png" class="logo-header"><h1>Gestão Bafafá 2026</h1></center>
+<div class="main-admin">
+    <div class="card-fin">
+        <h3>💰 RESUMO FINANCEIRO</h3>
+        <p>Entradas (Ingressos): R$ {{ total_entradas }}</p>
+        <p>Custos (Staff + Operação): R$ {{ total_custos }}</p>
+        <h2 style="color: #00ff88;">LUCRO ESTIMADO: R$ {{ total_entradas - total_custos }}</h2>
+    </div>
 
-    <div class="grid">
-        <div class="card">
-            <h3>💰 Receita de Ingressos</h3>
-            <div style="font-size: 32px; color:#00ff88;">R$ {{ "%.2f"|format(fin.lucro) }}</div>
-        </div>
-
-        <div class="card">
-            <h3>👥 Cadastrar Equipe / Staff</h3>
+    <div class="secoes">
+        <section>
+            <h3>🍺 GESTÃO DO BAR</h3>
             <form method="POST">
-                <input type="hidden" name="add_staff" value="1">
-                <input type="text" name="n" placeholder="Nome" required>
-                <input type="text" name="u" placeholder="Login" required>
-                <input type="password" name="s" placeholder="Senha" required>
-                <select name="c">
-                    <option value="admin">Administrador</option>
-                    <option value="gerente">Gerente</option>
-                    <option value="produtor">Produtor</option>
-                    <option value="portaria">Portaria</option>
-                    <option value="bar">Bar</option>
-                    <option value="seguranca">Segurança (Registro)</option>
-                    <option value="limpeza">Limpeza (Registro)</option>
-                    <option value="musico">Músico (Registro)</option>
-                </select>
-                <input type="number" name="v" placeholder="Cachê R$" step="0.01">
-                <button type="submit" class="btn" style="background:#f1c40f;">CADASTRAR</button>
+                <input type="hidden" name="form_tipo" value="produto">
+                <input type="text" name="n" placeholder="Nome da Bebida" required>
+                <input type="number" name="pc" placeholder="Preço Custo" step="0.01">
+                <input type="number" name="pv" placeholder="Preço Venda" step="0.01">
+                <input type="number" name="e" placeholder="Estoque">
+                <input type="text" name="img" placeholder="Nome da Imagem (cerveja.png)">
+                <button type="submit" class="btn">CADASTRAR PRODUTO</button>
             </form>
-        </div>
-    </div>
+        </section>
 
-    <div class="card" style="margin-top:20px; border: 1px solid #f1c40f;">
-        <h3>⚡ Liberação Manual Imediata</h3>
-        <table>
-            <thead><tr><th>Nome</th><th>Ações</th></tr></thead>
-            <tbody>
-                {% for c in fin.pendentes %}
-                <tr id="linha-{{ c.id }}">
-                    <td>{{ c.nome }}</td>
-                    <td>
-                        <button onclick="liberar({{ c.id }}, 'vip')" style="background:#6200ee; color:#fff; padding:8px; border-radius:5px; border:none; cursor:pointer;">💎 VIP</button>
-                        <button onclick="liberar({{ c.id }}, 'dinheiro')" style="background:#28a745; color:#fff; padding:8px; border-radius:5px; border:none; cursor:pointer;">💵 R$</button>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <section>
+            <h3>💸 LANÇAR CUSTO OPERACIONAL</h3>
+            <form method="POST">
+                <input type="hidden" name="form_tipo" value="custo">
+                <input type="text" name="d" placeholder="Descrição (ex: Aluguel de Som)">
+                <input type="number" name="v" placeholder="Valor R$">
+                <button type="submit" class="btn">REGISTRAR GASTO</button>
+            </form>
+        </section>
     </div>
-
-    <script>
-    function liberar(id, tipo) {
-        fetch(`/confirmar-direto/${id}?m=${tipo}`)
-        .then(res => res.json())
-        .then(data => {
-            if(data.status === 'sucesso') {
-                document.getElementById(`linha-${id}`).remove();
-            }
-        });
-    }
-    </script>
-</body>
-</html>
+</div>
