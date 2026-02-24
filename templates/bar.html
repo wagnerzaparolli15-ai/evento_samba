@@ -1,38 +1,90 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bar Digital - Bafafá</title>
     <style>
-        body { background: #000; color: white; font-family: sans-serif; padding: 15px; }
-        .grid-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
-        .card-prod { background: #111; border: 1px solid #333; border-radius: 15px; padding: 10px; text-align: center; }
-        .img-prod { width: 100%; border-radius: 10px; margin-bottom: 10px; }
-        .preco { color: #00ff88; font-weight: bold; font-size: 1.2rem; }
-        .btn-pedir { background: #f1c40f; color: black; border: none; width: 100%; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        body { background: #000; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 100px; }
+        .header { background: #111; padding: 20px; text-align: center; border-bottom: 3px solid #f1c40f; position: sticky; top: 0; z-index: 100; }
+        .card-produto { display: flex; align-items: center; background: #1a1a1a; margin: 12px; padding: 15px; border-radius: 15px; border: 1px solid #333; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .img-prod { width: 80px; height: 80px; border-radius: 10px; object-fit: cover; margin-right: 15px; border: 1px solid #444; }
+        .info-prod { flex-grow: 1; }
+        .nome-prod { font-weight: bold; font-size: 1.1rem; margin: 0; }
+        .preco-prod { color: #2ecc71; font-size: 1.2rem; font-weight: bold; margin: 5px 0; }
+        .btn-add { background: #f1c40f; color: black; border: none; padding: 10px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-add:active { transform: scale(0.9); background: #d4ac0d; }
+        
+        /* Carrinho Fixo no Rodapé */
+        .footer-cart { position: fixed; bottom: 0; width: 100%; background: #111; border-top: 2px solid #f1c40f; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; }
+        .total-box { font-size: 1.3rem; font-weight: bold; color: #f1c40f; }
+        .btn-finalizar { background: #2ecc71; color: black; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; font-size: 1rem; }
     </style>
 </head>
 <body>
-    <center>
-        <img src="/static/logo.png" style="width: 80px; border-radius: 50%;">
-        <h2>Bar Digital Bafafá</h2>
-        <p>Cliente: {{ c.nome }}</p>
-    </center>
 
-    <div class="grid-bar">
+    <div class="header">
+        <h2 style="margin: 0; font-size: 1.2rem;">CARDÁPIO BAF AFÁ 🎷</h2>
+        <small style="color: #888;">Cliente: {{ c.nome }}</small>
+    </div>
+
+    <div style="margin-top: 10px;">
         {% for p in produtos %}
-        <div class="card-prod">
-            <img src="/static/produtos/{{ p.imagem }}" class="img-prod">
-            <strong>{{ p.nome }}</strong><br>
-            <span class="preco">R$ {{ "%.2f"|format(p.preco_venda) }}</span>
-            <button class="btn-pedir" onclick="pedir({{ p.id }})">PEDIR AGORA</button>
+        <div class="card-produto">
+            <img src="{{ p.imagem_url or '/static/bebida_padrao.jpg' }}" class="img-prod">
+            <div class="info-prod">
+                <p class="nome-prod">{{ p.nome }}</p>
+                <div class="preco-prod">R$ {{ "%.2f"|format(p.preco_venda) }}</div>
+            </div>
+            <button class="btn-add" onclick="adicionarAoPedido('{{ p.id }}', '{{ p.nome }}', {{ p.preco_venda }})">＋</button>
         </div>
         {% endfor %}
     </div>
 
+    <div class="footer-cart">
+        <div class="total-box">Total: <span id="display-total">R$ 0,00</span></div>
+        <button class="btn-finalizar" onclick="gerarPedido()">PEDIR AGORA</button>
+    </div>
+
     <script>
-        function pedir(id) {
-            alert("Pedido enviado para o balcão! Prepare o QR Code de pagamento.");
+        let total = 0;
+        let itens = [];
+
+        function adicionarAoPedido(id, nome, preco) {
+            total += preco;
+            itens.push({id: id, nome: nome});
+            document.getElementById('display-total').innerText = `R$ ${total.toFixed(2)}`;
+            
+            // Pequeno feedback visual no botão
+            const som = new Audio('https://www.soundjay.com/buttons/sounds/button-37.mp3'); // Opcional
+            // som.play();
+        }
+
+        function gerarPedido() {
+            if (itens.length === 0) {
+                alert("Seu carrinho está vazio!");
+                return;
+            }
+            
+            if (confirm("Deseja confirmar o pedido de R$ " + total.toFixed(2) + "?")) {
+                // Envia para o servidor processar a baixa no estoque
+                fetch('/comprar_item', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        cliente_id: "{{ c.id }}",
+                        itens: itens,
+                        valor_total: total
+                    })
+                }).then(response => {
+                    if (response.ok) {
+                        alert("Pedido enviado! Mostre seu nome no bar para retirar.");
+                        window.location.reload();
+                    } else {
+                        alert("Erro ao processar pedido. Tente novamente.");
+                    }
+                });
+            }
         }
     </script>
 </body>
