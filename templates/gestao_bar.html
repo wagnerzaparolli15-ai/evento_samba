@@ -1,9 +1,33 @@
-<body style="background:#121212; color:white; font-family:sans-serif;">
-    <h2 style="color:#f1c40f;">GESTÃO DE BAR</h2>
-    <hr>
-    {% for p in produtos %}
-    <div style="padding:10px; border-bottom:1px solid #333;">
-        {{ p.nome }} - <b>Estoque: {{ p.estoque }}</b> - R$ {{ p.preco }}
-    </div>
-    {% endfor %}
-</body>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Bar Bafafá</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body { background: #000; color: #fff; font-family: sans-serif; text-align: center; }
+        .vitrine { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; padding: 20px; }
+        .produto-card { background: #111; border: 1px solid #f1c40f; padding: 15px; border-radius: 10px; width: 150px; }
+        .produto-card img { width: 100%; border-radius: 5px; }
+        .btn-pedir { background: #f1c40f; color: #000; padding: 10px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        #reader { width: 100%; max-width: 400px; margin: auto; }
+    </style>
+</head>
+<body>
+    {% if modo == 'leitor' %}
+        <h2>BARMAN: ESCANEAR PEDIDO</h2>
+        <div id="reader"></div>
+        <script>
+            function onScanSuccess(decodedText) { window.location.href = decodedText; }
+            let scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+            scanner.render(onScanSuccess);
+        </script>
+    {% elif modo == 'cliente' %}
+        <h2>🍺 NOSSO BAR DIGITAL</h2>
+        <div class="vitrine">
+            {% for p in produtos %}
+            <div class="produto-card">
+                <img src="{{ p.imagem_url }}" alt="{{ p.nome }}">
+                <h4>{{ p.nome }}</h4>
+                <p>R$ {{ p.preco_venda }}</p>
+                <form method="POST">
