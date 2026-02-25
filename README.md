@@ -1,18 +1,27 @@
-# 🎷 Bafafá 2026 - Ecossistema de Gestão de Eventos
+# Bafafá 2026 - Sistema Enterprise Híbrido 🎷🚀
 
-Este é um sistema completo para gestão de eventos, integrando venda de ingressos, automação de pagamentos via Mercado Pago, controle de staff (Portaria/Bar) e um Painel Administrativo estratégico com cálculo de lucro real.
+O sistema de gestão definitiva para o evento Bafafá 2026, unindo tecnologia de ponta, acessibilidade e sofisticação.
 
-## 🚀 Funcionalidades Mestre
+## 💎 Diferenciais Tecnológicos
+- **Arquitetura Híbrida**: Venda de ingressos online, bar digital com carteira própria (Wallet) e suporte total para o "Lado B" (operação manual).
+- **Wallet System**: Clientes podem carregar saldo via Pix ou no caixa físico para compras instantâneas.
+- **Interface Glassmorphism**: Visual de alto nível com efeitos de desfoque e transparência (vidro), otimizado para iPhone 17 e Android 11+.
+- **PDV Estilo Zé Delivery**: Vitrine de produtos com interação fluida via AJAX (sem recarregamento de página) e resposta tátil (vibração).
+- **Scanner Inteligente**: Portaria com controle de bateria (câmera on/off) e sistema de "Desfazer Check-in".
 
-1. **Venda de Ingressos**: Fluxo automatizado com geração de link de pagamento (Pix/Cartão).
-2. **Webhooks Mercado Pago**: Confirmação automática de pagamento sem intervenção humana.
-3. **Bar Digital**: Cardápio dinâmico para clientes com controle de estoque e preços via Admin.
-4. **Portaria Inteligente**: Check-in de clientes e validação de QR Code.
-5. **Painel Admin Master**: Controle de 8 setores (Financeiro, RH, Estoque, Custos, etc).
-6. **Liberação VIP/Manual**: Botões de ação rápida via AJAX (sem recarregar a página).
+## 🚀 Como Iniciar
+1. Realize o deploy no Render.
+2. Configure as variáveis de ambiente:
+   - `DATABASE_URL`: Link do banco PostgreSQL.
+   - `MP_ACCESS_TOKEN`: Token do Mercado Pago.
+   - `SECRET_KEY`: Chave de segurança do Flask.
+3. **MUITO IMPORTANTE**: Após o deploy, acesse o link de sincronização para criar o banco de dados e a vitrine master:
+   `https://evento-samba.onrender.com/reset-bruto-bafafa`
 
-## 🛠️ Como Instalar (Localmente)
+## 🛠️ Operação
+- **Admin Master**: Controle financeiro em tempo real (Receita, Custos, Lucro), gestão de estoque e recarga de saldo de clientes.
+- **Portaria**: Validação de ingressos via QR Code com modo de economia de energia.
+- **Super Barman**: Tela de pedidos em tempo real e PDV manual para clientes sem smartphone.
 
-1. Clone o repositório:
-   ```bash
-   git clone [https://github.com/wagnerzaparolli15-ai/evento_samba.git](https://github.com/wagnerzaparolli15-ai/evento_samba.git)
+---
+Desenvolvido para Wagner Master - Bafafá 2026.

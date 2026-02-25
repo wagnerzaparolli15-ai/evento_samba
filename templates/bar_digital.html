@@ -6,93 +6,70 @@
     <title>Bar Digital - Bafafá 2026</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --gold: #f1c40f; --bg: #050505; --card: rgba(20, 20, 20, 0.95); --success: #2ecc71; --danger: #e74c3c; }
-        body { background: linear-gradient(135deg, #050505 0%, #1a1a00 100%); background-attachment: fixed; color: #fff; font-family: sans-serif; margin: 0; padding-bottom: 120px; }
-        .header { text-align: center; padding: 20px; border-bottom: 2px solid var(--gold); background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); }
-        .header img { width: 80px; filter: drop-shadow(0 0 5px var(--gold)); }
-        .container { padding: 15px; max-width: 600px; margin: auto; }
-        .vitrine { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .produto-card { background: var(--card); border-radius: 15px; border: 1px solid rgba(241, 196, 15, 0.2); overflow: hidden; text-align: center; padding-bottom: 12px; }
-        .img-box { width: 100%; height: 120px; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .img-box img { width: 100%; height: 100%; object-fit: contain; padding: 10px; }
-        .info h4 { margin: 8px 0; font-size: 0.85rem; text-transform: uppercase; color: #eee; height: 35px; display: flex; align-items: center; justify-content: center; }
-        .preco { color: var(--gold); font-weight: bold; font-size: 1.1rem; display: block; margin-bottom: 8px; }
-        .btn-add { background: var(--gold); color: #000; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 90%; font-size: 0.7rem; }
-        .carrinho-float { background: rgba(10,10,10,0.98); border: 2px solid var(--gold); border-radius: 20px 20px 0 0; padding: 20px; margin-top: 30px; box-shadow: 0 -10px 30px rgba(0,0,0,0.8); }
-        .carrinho-float h3 { color: var(--gold); margin: 0 0 15px 0; border-bottom: 1px solid #333; padding-bottom: 10px; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.9rem; border-bottom: 1px solid #222; padding-bottom: 5px; }
-        .btn-remove { background: none; border: none; color: var(--danger); font-size: 1.2rem; cursor: pointer; padding: 0 10px; }
-        select { background: #000; color: #fff; border: 1px solid var(--gold); padding: 12px; border-radius: 10px; width: 100%; margin: 15px 0; }
-        .btn-final { background: var(--success); color: #000; border: none; padding: 15px; border-radius: 10px; width: 100%; font-weight: bold; font-size: 1rem; cursor: pointer; }
-        .qr-final { background: #fff; padding: 15px; border-radius: 15px; display: inline-block; margin: 20px 0; }
-        .footer-total { position: fixed; bottom: 0; left: 0; right: 0; background: #000; padding: 15px 25px; border-top: 2px solid var(--gold); display: flex; justify-content: space-between; align-items: center; z-index: 1000; }
+        :root { --gold: #f1c40f; --bg: #050505; --glass: rgba(255, 255, 255, 0.05); }
+        body { background: #000; color: #fff; font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 120px; }
+        .header { position: sticky; top: 0; z-index: 1000; background: rgba(0,0,0,0.8); backdrop-filter: blur(15px); padding: 20px; text-align: center; border-bottom: 1px solid rgba(241,196,15,0.2); }
+        .wallet { background: linear-gradient(135deg, #222 0%, #000 100%); border: 1px solid var(--gold); border-radius: 20px; padding: 20px; margin: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .vitrine { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 20px; }
+        .card { background: var(--glass); border-radius: 18px; border: 1px solid rgba(255,255,255,0.1); padding: 15px; text-align: center; }
+        .img-box img { width: 80%; height: 100px; object-fit: contain; }
+        .btn-add { background: var(--gold); color: #000; border: none; padding: 12px; border-radius: 10px; font-weight: bold; width: 100%; cursor: pointer; }
+        .cart-float { background: rgba(10,10,10,0.95); border: 2px solid var(--gold); border-radius: 20px; padding: 20px; margin: 20px; }
+        .qr-final { background: #fff; padding: 15px; border-radius: 15px; display: inline-block; margin-top: 15px; }
     </style>
 </head>
 <body>
-
     <div class="header">
-        <img src="{{ url_for('static', filename='logo.png') }}">
-        <h2 style="color:var(--gold); margin: 5px 0 0; font-size: 0.9rem;">BAR DIGITAL BAFAFÁ</h2>
+        <img src="{{ url_for('static', filename='logo.png') }}" width="60">
+        <div style="color:var(--gold); font-size: 0.7rem; letter-spacing: 2px;">WALLET SYSTEM</div>
     </div>
-
-    <div class="container">
-        <div class="vitrine">
-            {% for p in produtos %}
-            <div class="produto-card">
-                <div class="img-box"><img src="{{ url_for('static', filename='produtos/' + p.imagem_url) }}"></div>
-                <div class="info">
-                    <h4>{{ p.nome }}</h4>
-                    <span class="preco">R$ {{ "{:,.2f}".format(p.preco_venda) }}</span>
-                    <form method="POST">
-                        <input type="hidden" name="produto_id" value="{{ p.id }}">
-                        <button type="submit" class="btn-add"><i class="fas fa-plus"></i> ADICIONAR</button>
-                    </form>
-                </div>
-            </div>
-            {% endfor %}
+    <div class="wallet">
+        <div><small style="color:#888;">SALDO DISPONÍVEL</small><div style="font-size: 1.5rem; font-weight: bold; color: var(--gold);">R$ {{ "{:,.2f}".format(c.saldo) }}</div></div>
+        <button onclick="alert('Recarga disponível no balcão.')" style="background:none; border:1px solid #444; color:#fff; border-radius:50%; width:40px; height:40px;"><i class="fas fa-plus"></i></button>
+    </div>
+    <div class="vitrine">
+        {% for p in produtos %}
+        <div class="card">
+            <div class="img-box"><img src="{{ url_for('static', filename='produtos/' + p.imagem_url) }}"></div>
+            <h4 style="font-size:0.8rem; height:30px;">{{ p.nome }}</h4>
+            <div style="color:var(--gold); font-weight:bold; margin-bottom:10px;">R$ {{ p.preco_venda }}</div>
+            <button class="btn-add" onclick="addCarrinho('{{ p.id }}', '{{ c.id }}')">ADICIONAR</button>
         </div>
-
-        {% if carrinho %}
-        <div class="carrinho-float">
-            <h3><i class="fas fa-receipt"></i> NOTA DO PEDIDO</h3>
-            {% for item in carrinho %}
-            <div class="item-row">
-                <span>{{ item.nome }} <span style="color:var(--gold); margin-left: 10px;">R$ {{ "{:,.2f}".format(item.preco) }}</span></span>
-                <form action="/remover-item/{{ item.pedido_id }}" method="POST" style="margin:0;">
-                    <button type="submit" class="btn-remove"><i class="fas fa-trash-alt"></i></button>
-                </form>
-            </div>
-            {% endfor %}
-            
-            <div style="display: flex; justify-content: space-between; margin-top: 15px; font-weight: bold;">
-                <span>TOTAL:</span>
-                <span style="color:var(--gold); font-size: 1.3rem;">R$ {{ "{:,.2f}".format(total) }}</span>
-            </div>
-
-            <form action="/finalizar-carrinho/{{ c.id }}" method="POST">
-                <label style="font-size: 0.7rem; color: #888;">FORMA DE PAGAMENTO:</label>
-                <select name="metodo_pagamento">
-                    <option value="PIX">PIX</option>
-                    <option value="CARTÃO">CARTÃO</option>
-                    <option value="DINHEIRO">DINHEIRO</option>
-                </select>
-                <button type="submit" class="btn-final"><i class="fas fa-check-circle"></i> FECHAR E GERAR QR</button>
-            </form>
+        {% endfor %}
+    </div>
+    {% if carrinho %}
+    <div class="cart-float">
+        <h3 style="color:var(--gold); margin-top:0;">NOTA DO PEDIDO</h3>
+        {% for item in carrinho %}
+        <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #222;">
+            <span>{{ item.nome }}</span><span>R$ {{ item.preco }}</span>
         </div>
+        {% endfor %}
+        <div style="display:flex; justify-content:space-between; margin:15px 0; font-weight:bold;">
+            <span>TOTAL:</span><span style="color:var(--gold); font-size:1.3rem;">R$ {{ "{:,.2f}".format(total) }}</span>
+        </div>
+        {% if c.saldo >= total %}
+        <form action="/comprar-com-saldo/{{ c.id }}" method="POST"><button type="submit" style="background:#2ecc71; color:#000;" class="btn-add">PAGAR COM SALDO</button></form>
         {% endif %}
-
-        {% if qr_pedido %}
-        <div style="text-align: center; border: 2px dashed var(--success); border-radius: 20px; padding: 25px; margin-top: 30px;">
-            <h3 style="color:var(--success); margin: 0;">PEDIDO LIBERADO!</h3>
-            <div class="qr-final"><img src="data:image/png;base64,{{ qr_pedido }}" width="180"></div>
-            <p>Apresente este código no bar.</p>
-        </div>
-        {% endif %}
+        <form action="/finalizar-carrinho/{{ c.id }}" method="POST" style="margin-top:10px;">
+            <select name="metodo_pagamento" style="width:100%; padding:10px; background:#000; color:#fff; border:1px solid var(--gold); border-radius:8px;">
+                <option value="PIX">PIX (BALCÃO)</option><option value="CARTÃO">CARTÃO</option><option value="DINHEIRO">DINHEIRO</option>
+            </select>
+            <button type="submit" class="btn-add" style="background:#fff; margin-top:10px;">GERAR TICKET BALCÃO</button>
+        </form>
     </div>
-
-    <div class="footer-total">
-        <div><small style="color:#888;">Total Carrinho:</small><div style="color:var(--gold); font-size: 1.2rem; font-weight: bold;">R$ {{ "{:,.2f}".format(total) }}</div></div>
-        <div style="text-align: right;"><small style="color:#888;">{{ c.nome }}</small></div>
+    {% endif %}
+    {% if qr_pedido %}
+    <div style="text-align: center; border: 2px dashed #2ecc71; border-radius: 20px; padding: 25px; margin: 20px;">
+        <h3 style="color:#2ecc71; margin:0;">PEDIDO LIBERADO!</h3>
+        <div class="qr-final"><img src="data:image/png;base64,{{ qr_pedido }}" width="150"></div>
     </div>
+    {% endif %}
+    <script>
+        function addCarrinho(pId, cId) {
+            fetch('/api/add-carrinho', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({produto_id:pId, cliente_id:cId})})
+            .then(res => res.json()).then(data => { if(data.success) { if(window.navigator.vibrate) window.navigator.vibrate(50); window.location.reload(); }});
+        }
+    </script>
 </body>
 </html>

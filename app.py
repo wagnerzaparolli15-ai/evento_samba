@@ -1,11 +1,10 @@
 import os, mercadopago, qrcode, io, base64
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
 
 app = Flask(__name__)
 
-# --- CONFIGURAÇÃO ROBUSTA ---
 db_url = os.getenv("DATABASE_URL")
 if db_url and db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
@@ -16,7 +15,6 @@ app.secret_key = os.getenv("SECRET_KEY", "BAFAFA_MASTER_2026_ENTERPRISE")
 db = SQLAlchemy(app)
 sdk = mercadopago.SDK(os.getenv("MP_ACCESS_TOKEN"))
 
-# --- MODELAGEM DE DADOS ---
 class Equipe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100)); usuario = db.Column(db.String(50), unique=True)
@@ -27,8 +25,15 @@ class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100)); telefone = db.Column(db.String(20))
     pago = db.Column(db.Boolean, default=False); na_casa = db.Column(db.Boolean, default=False)
-    valor_total = db.Column(db.Float, default=45.0)
+    saldo = db.Column(db.Float, default=0.0)
+    valor_total_pago = db.Column(db.Float, default=45.0)
     mp_id = db.Column(db.String(100))
+
+class Transacao(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    cliente_id = db.Column(db.Integer, db.ForeignKey('cliente.id'))
+    valor = db.Column(db.Float); tipo = db.Column(db.String(20)) 
+    metodo = db.Column(db.String(20))
 
 class CustoOperacional(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -46,12 +51,12 @@ class Pedido(db.Model):
     produto_id = db.Column(db.Integer, db.ForeignKey('produto.id'))
     status = db.Column(db.String(20), default='No Carrinho')
     metodo_pagamento = db.Column(db.String(50))
+    pago_com_saldo = db.Column(db.Boolean, default=False)
 
 def gerar_qr_b64(conteudo):
     qr = qrcode.make(conteudo); buf = io.BytesIO(); qr.save(buf, format="PNG")
     return base64.b64encode(buf.getvalue()).decode()
 
-# --- ROTAS CLIENTE ---
 @app.route('/')
 def index(): return render_template('index.html')
 
@@ -87,16 +92,15 @@ def webhook():
 @app.route('/ingresso/<int:id>')
 def ingresso(id):
     c = Cliente.query.get_or_404(id)
-    if not c.pago: return "Aguardando pagamento..."
+    if not c.pago: return render_template('templates-feedback.html', tipo='aguardando')
     qr_checkin = gerar_qr_b64(f"https://evento-samba.onrender.com/validar-entrada/{c.id}")
     return render_template('obrigado.html', c=c, qr_checkin=qr_checkin)
 
-# --- PORTARIA (AGORA COM LADO B) ---
 @app.route('/portaria')
 def portaria():
     if session.get('cargo') not in ['admin', 'portaria', 'bar']: return redirect(url_for('login_staff'))
     clientes_p = Cliente.query.filter_by(pago=True, na_casa=False).all()
-    clientes_in = Cliente.query.filter_by(na_casa=True).all() # Lado B
+    clientes_in = Cliente.query.filter_by(na_casa=True).all()
     return render_template('portaria.html', clientes=clientes_p, clientes_in=clientes_in, msg=request.args.get('msg'))
 
 @app.route('/validar-entrada/<int:id>')
@@ -110,41 +114,36 @@ def desfazer_entrada(id):
     c = Cliente.query.get_or_404(id); c.na_casa = False; db.session.commit()
     return redirect(url_for('portaria', msg=f"Check-in desfeito: {c.nome}"))
 
-# --- BAR DIGITAL (PDV CLIENTE) ---
-@app.route('/bar-digital/<int:id>', methods=['GET', 'POST'])
+@app.route('/bar-digital/<int:id>')
 def bar_digital(id):
     c = Cliente.query.get_or_404(id)
     if not c.na_casa: return "Check-in pendente."
-    
-    if request.method == 'POST':
-        db.session.add(Pedido(cliente_id=c.id, produto_id=request.form.get('produto_id'), status='No Carrinho'))
-        db.session.commit()
-        return redirect(url_for('bar_digital', id=c.id))
-
-    produtos_db = Produto.query.all()
-    carrinho = Pedido.query.filter_by(cliente_id=c.id, status='No Carrinho').all()
-    
-    # Detalhes aprimorados para incluir ID do pedido (para remover)
+    produtos = Produto.query.filter(Produto.estoque > 0).all()
+    carrinho_db = Pedido.query.filter_by(cliente_id=c.id, status='No Carrinho').all()
     carrinho_detalhes = []
     total_carrinho = 0
-    for item in carrinho:
+    for item in carrinho_db:
         p = Produto.query.get(item.produto_id)
         if p:
             carrinho_detalhes.append({'pedido_id': item.id, 'nome': p.nome, 'preco': p.preco_venda})
             total_carrinho += p.preco_venda
+    pedidos_ativos = Pedido.query.filter(Pedido.cliente_id == c.id, Pedido.status.in_(['Pagamento Pendente', 'Pago'])).all()
+    qr_pedido = gerar_qr_b64(f"https://evento-samba.onrender.com/confirmar-pedido/{c.id}") if pedidos_ativos else None
+    return render_template('bar_digital.html', produtos=produtos, c=c, carrinho=carrinho_detalhes, total=total_carrinho, qr_pedido=qr_pedido)
 
-    pedidos_finalizados = Pedido.query.filter_by(cliente_id=c.id, status='Pagamento Pendente').all()
-    qr_pedido = gerar_qr_b64(f"https://evento-samba.onrender.com/confirmar-pedido/{c.id}") if pedidos_finalizados else None
-    
-    return render_template('bar_digital.html', produtos=produtos_db, c=c, carrinho=carrinho_detalhes, total=total_carrinho, qr_pedido=qr_pedido)
+@app.route('/api/add-carrinho', methods=['POST'])
+def add_carrinho():
+    data = request.json
+    p = Produto.query.get(data['produto_id'])
+    if p and p.estoque > 0:
+        db.session.add(Pedido(cliente_id=data['cliente_id'], produto_id=p.id))
+        db.session.commit(); return jsonify({"success": True})
+    return jsonify({"success": False}), 400
 
 @app.route('/remover-item/<int:pedido_id>', methods=['POST'])
 def remover_item(pedido_id):
-    p = Pedido.query.get_or_404(pedido_id)
-    cliente_id = p.cliente_id
-    if p.status == 'No Carrinho':
-        db.session.delete(p)
-        db.session.commit()
+    p = Pedido.query.get_or_404(pedido_id); cliente_id = p.cliente_id
+    if p.status == 'No Carrinho': db.session.delete(p); db.session.commit()
     return redirect(url_for('bar_digital', id=cliente_id))
 
 @app.route('/finalizar-carrinho/<int:id>', methods=['POST'])
@@ -152,32 +151,50 @@ def finalizar_carrinho(id):
     metodo = request.form.get('metodo_pagamento')
     itens = Pedido.query.filter_by(cliente_id=id, status='No Carrinho').all()
     for item in itens:
-        item.status = 'Pagamento Pendente'
-        item.metodo_pagamento = metodo
-    db.session.commit()
+        item.status = 'Pagamento Pendente'; item.metodo_pagamento = metodo
+    db.session.commit(); return redirect(url_for('bar_digital', id=id))
+
+@app.route('/comprar-com-saldo/<int:id>', methods=['POST'])
+def comprar_com_saldo(id):
+    c = Cliente.query.get_or_404(id)
+    itens = Pedido.query.filter_by(cliente_id=id, status='No Carrinho').all()
+    total = sum(Produto.query.get(i.produto_id).preco_venda for i in itens)
+    if c.saldo >= total and total > 0:
+        c.saldo -= total
+        for i in itens:
+            i.status = 'Pago'; i.pago_com_saldo = True; i.metodo_pagamento = 'SALDO DIGITAL'
+        db.session.add(Transacao(cliente_id=id, valor=total, tipo='Compra', metodo='Saldo Digital'))
+        db.session.commit()
     return redirect(url_for('bar_digital', id=id))
 
-# --- BAR STAFF (SUPER BARMAN) ---
 @app.route('/bar-staff')
 def bar_staff():
     if session.get('cargo') not in ['admin', 'bar']: return redirect(url_for('login_staff'))
-    pedidos_pendentes = db.session.query(Pedido, Cliente, Produto).join(Cliente).join(Produto).filter(Pedido.status == 'Pagamento Pendente').all()
-    clientes_na_casa = Cliente.query.filter_by(na_casa=True).all()
-    return render_template('gestao_bar.html', pedidos=pedidos_pendentes, clientes=clientes_na_casa)
+    pedidos = db.session.query(Pedido, Cliente, Produto).join(Cliente).join(Produto).filter(Pedido.status.in_(['Pagamento Pendente', 'Pago'])).all()
+    clientes = Cliente.query.filter_by(na_casa=True).all()
+    return render_template('gestao_bar.html', pedidos=pedidos, clientes=clientes)
 
 @app.route('/confirmar-pedido/<int:cliente_id>')
 def confirmar_pedido(cliente_id):
-    pedidos = Pedido.query.filter_by(cliente_id=cliente_id, status='Pagamento Pendente').all()
-    func_atual = Equipe.query.filter_by(usuario=session.get('usuario_nome')).first()
+    pedidos = Pedido.query.filter(Pedido.cliente_id == cliente_id, Pedido.status.in_(['Pagamento Pendente', 'Pago'])).all()
+    func = Equipe.query.filter_by(usuario=session.get('usuario_nome')).first()
     for p in pedidos:
-        p.status = 'Entregue'
-        prod = Produto.query.get(p.produto_id)
+        p.status = 'Entregue'; prod = Produto.query.get(p.produto_id)
         if prod.estoque > 0: prod.estoque -= 1
-        if func_atual: func_atual.caixinha_total += (prod.preco_venda * 0.10)
-    db.session.commit()
-    return "<h1>PEDIDO ENTREGUE!</h1><a href='/bar-staff'>Voltar ao Balcão</a>"
+        if func: func.caixinha_total += (prod.preco_venda * 0.10)
+    db.session.commit(); return "<h1>PEDIDO ENTREGUE!</h1><a href='/bar-staff'>Voltar</a>"
 
-# --- ADMIN COMPLETO ---
+@app.route('/recarga-manual', methods=['POST'])
+def recarga_manual():
+    if session.get('cargo') not in ['admin', 'bar']: return redirect(url_for('login_staff'))
+    c = Cliente.query.get(request.form.get('cliente_id'))
+    valor = float(request.form.get('valor'))
+    if c:
+        c.saldo += valor
+        db.session.add(Transacao(cliente_id=c.id, valor=valor, tipo='Recarga', metodo=request.form.get('metodo')))
+        db.session.commit()
+    return redirect(request.referrer)
+
 @app.route('/admin_total', methods=['GET', 'POST'])
 def admin_total():
     if session.get('cargo') != 'admin': return redirect(url_for('login_staff'))
@@ -186,26 +203,15 @@ def admin_total():
         if tipo == 'equipe': db.session.add(Equipe(nome=request.form.get('n'), usuario=request.form.get('u'), senha=request.form.get('s'), cargo=request.form.get('c')))
         elif tipo == 'custo': db.session.add(CustoOperacional(descricao=request.form.get('d'), valor=float(request.form.get('v'))))
         db.session.commit()
-    
-    entradas = db.session.query(func.sum(Cliente.valor_total)).filter_by(pago=True).scalar() or 0
-    vendas_bar = db.session.query(func.sum(Produto.preco_venda)).join(Pedido).filter(Pedido.status == 'Entregue').scalar() or 0
+    entradas = db.session.query(func.sum(Cliente.valor_total_pago)).filter_by(pago=True).scalar() or 0
+    recargas = db.session.query(func.sum(Transacao.valor)).filter_by(tipo='Recarga').scalar() or 0
+    vendas_balcao = db.session.query(func.sum(Produto.preco_venda)).join(Pedido).filter(Pedido.status == 'Entregue', Pedido.pago_com_saldo == False).scalar() or 0
     custos = db.session.query(func.sum(CustoOperacional.valor)).scalar() or 0
-    
-    return render_template('admin_total.html', 
-                           total_entradas=entradas + vendas_bar, 
-                           total_custos=custos, 
-                           equipe=Equipe.query.all(), 
-                           produtos=Produto.query.all(), 
-                           custos_lista=CustoOperacional.query.all(), 
-                           clientes_pendentes=Cliente.query.filter_by(pago=False).all(),
-                           clientes_aprovados=Cliente.query.filter_by(pago=True, na_casa=False).all()) # Para o lado B
+    return render_template('admin_total.html', receita_total=entradas + recargas + vendas_balcao, total_custos=custos, equipe=Equipe.query.all(), produtos=Produto.query.all(), custos_lista=CustoOperacional.query.all(), clientes_pendentes=Cliente.query.filter_by(pago=False).all(), clientes_aprovados=Cliente.query.filter_by(pago=True, na_casa=False).all(), clientes_na_casa=Cliente.query.filter_by(na_casa=True).all())
 
 @app.route('/atualizar-produto/<int:id>', methods=['POST'])
 def atualizar_produto(id):
-    p = Produto.query.get_or_404(id)
-    p.preco_venda = float(request.form.get('pv'))
-    p.preco_custo = float(request.form.get('pc'))
-    p.estoque = int(request.form.get('e'))
+    p = Produto.query.get_or_404(id); p.preco_venda = float(request.form.get('pv')); p.preco_custo = float(request.form.get('pc')); p.estoque = int(request.form.get('e'))
     db.session.commit(); return redirect(url_for('admin_total'))
 
 @app.route('/aprovar-manual/<int:id>')
@@ -233,16 +239,10 @@ def logout(): session.clear(); return redirect(url_for('login_staff'))
 @app.route('/reset-bruto-bafafa')
 def reset():
     db.drop_all(); db.create_all()
-    itens = [
-        ("Antarctica", "antarctica.jpg"), ("Brahma", "brahma.jpg"), ("Heineken", "heineken.jpg"),
-        ("Amstel", "amstel.jpg"), ("Spaten", "spaten.jpg"), ("Coca-Cola", "coca.jpg"),
-        ("Guaraná Ant.", "guarana.jpg"), ("Red Bull", "redbull.jpg"), ("Red Label", "redlabel.jpg"),
-        ("Black Label", "blacklabel.jpg"), ("Feijoada Bafafá", "feijoada.jpg"), ("Caipirinha Limão", "caipirinha.jpg")
-    ]
+    itens = [("Antarctica", "antarctica.jpg"), ("Brahma", "brahma.jpg"), ("Heineken", "heineken.jpg"), ("Amstel", "amstel.jpg"), ("Spaten", "spaten.jpg"), ("Coca-Cola", "coca.jpg"), ("Guaraná Ant.", "guarana.jpg"), ("Red Bull", "redbull.jpg"), ("Red Label", "redlabel.jpg"), ("Black Label", "blacklabel.jpg"), ("Feijoada Bafafá", "feijoada.jpg"), ("Caipirinha Limão", "caipirinha.jpg")]
     for n, img in itens: db.session.add(Produto(nome=n, imagem_url=img, preco_venda=0, preco_custo=0, estoque=0))
     db.session.add(Equipe(nome='Wagner Master', usuario='wagner', senha='123', cargo='admin'))
-    db.session.commit()
-    return "✅ RESET OK: PDV COM LADO B PRONTO!"
+    db.session.commit(); return "✅ SISTEMA HÍBRIDO RESETADO!"
 
 if __name__ == '__main__':
     with app.app_context(): db.create_all()
