@@ -3,88 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Administrativo - Bafafá 2026</title>
+    <title>Dashboard Corporate - Bafafá 2026</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --primary: #f1c40f; --bg: #000; --card: #111; --text: #fff; --success: #00ff88; --danger: #ff4d4d; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
         
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 2px solid var(--primary); margin-bottom: 30px; }
         
-        .header { text-align: center; border-bottom: 2px solid var(--primary); padding-bottom: 20px; margin-bottom: 30px; }
-        .header img { width: 80px; border-radius: 50%; margin-bottom: 10px; }
-        .header h1 { margin: 0; color: var(--primary); font-size: 1.8rem; }
-        
-        .grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
-        .stat-card { background: var(--card); padding: 20px; border-radius: 15px; border: 1px solid #333; text-align: center; }
-        .stat-card h3 { margin: 0; font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-        .stat-card h2 { margin: 10px 0 0; font-size: 1.5rem; color: var(--primary); }
-        
-        .main-content { display: grid; grid-template-columns: 1fr; gap: 20px; max-width: 1200px; margin: auto; }
-        @media (min-width: 900px) { .main-content { grid-template-columns: 2fr 1fr; } }
-        
-        section { background: var(--card); padding: 20px; border-radius: 15px; border: 1px solid #333; margin-bottom: 20px; }
-        h3 { color: var(--primary); margin-top: 0; border-bottom: 1px solid #222; padding-bottom: 10px; }
-        
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #444; background: #222; color: #fff; box-sizing: border-box; }
-        
-        .btn { width: 100%; padding: 12px; background: var(--primary); color: #000; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-        .btn:hover { background: #fff; transform: scale(1.02); }
-        .btn-danger { background: transparent; border: 1px solid var(--danger); color: var(--danger); font-size: 0.8rem; padding: 5px; margin-top: 20px; display: block; text-decoration: none; text-align: center; }
+        /* Cartões de Resumo */
+        .grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #333; text-align: center; }
+        .stat-card h3 { margin: 0; font-size: 0.8rem; color: #888; text-transform: uppercase; }
+        .stat-card h2 { margin: 10px 0 0; font-size: 2rem; color: var(--primary); }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
+        .main-content { display: grid; grid-template-columns: 1fr; gap: 25px; }
+        @media (min-width: 1000px) { .main-content { grid-template-columns: 2fr 1fr; } }
+
+        section { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #333; margin-bottom: 25px; }
+        h3 { color: var(--primary); border-bottom: 1px solid #222; padding-bottom: 10px; margin-top: 0; }
+
+        /* Formulários */
+        form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        input, select { background: #222; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 8px; width: 100%; box-sizing: border-box; }
+        .full-width { grid-column: span 2; }
+        button { background: var(--primary); color: #000; font-weight: bold; padding: 12px; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #fff; transform: translateY(-2px); }
+
+        /* Tabelas */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9rem; }
         th { text-align: left; color: #666; padding: 10px; border-bottom: 1px solid #333; }
         td { padding: 10px; border-bottom: 1px solid #222; }
-        
-        .badge { background: rgba(0, 255, 136, 0.1); color: var(--success); padding: 4px 8px; border-radius: 5px; font-weight: bold; }
-        .item-list { background: #1a1a1a; padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid var(--primary); }
+        .badge { background: rgba(241, 196, 15, 0.1); color: var(--primary); padding: 3px 8px; border-radius: 5px; font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <img src="/static/logo.png" alt="Logo Bafafá">
-        <h1>Bafafá Business <small style="font-size: 0.6rem; vertical-align: middle;">v2.0</small></h1>
-        <p style="font-size: 0.9rem; color: #666;">Olá, <strong>{{ session.usuario_nome }}</strong></p>
+        <h1><i class="fas fa-crown"></i> BAFAFÁ BUSINESS</h1>
+        <div>
+            <span>Painel de: <strong>{{ session.usuario_nome }}</strong></span>
+            <a href="/logout" style="color: var(--danger); margin-left: 15px; text-decoration: none;">Sair</a>
+        </div>
     </div>
 
     <div class="grid-stats">
         <div class="stat-card">
-            <h3>💰 Faturamento</h3>
+            <h3>💰 Faturamento Bruto</h3>
             <h2>R$ {{ "{:,.2f}".format(total_entradas) }}</h2>
         </div>
         <div class="stat-card">
-            <h3>💸 Custos</h3>
+            <h3>💸 Despesas Totais</h3>
             <h2 style="color: var(--danger);">R$ {{ "{:,.2f}".format(total_custos) }}</h2>
         </div>
         <div class="stat-card" style="border-color: var(--success);">
-            <h3>📈 Lucro</h3>
+            <h3>📈 Lucro Líquido</h3>
             <h2 style="color: var(--success);">R$ {{ "{:,.2f}".format(total_entradas - total_custos) }}</h2>
         </div>
     </div>
 
     <div class="main-content">
-        <div class="col-left">
+        <div class="col">
             <section>
-                <h3><i class="fas fa-beer"></i> Gestão do Bar</h3>
-                <form method="POST" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <h3><i class="fas fa-users-cog"></i> GESTÃO DE EQUIPE</h3>
+                <form method="POST">
+                    <input type="hidden" name="form_tipo" value="equipe">
+                    <input type="text" name="n" placeholder="Nome do Funcionário" required>
+                    <input type="text" name="u" placeholder="Usuário (Login)" required>
+                    <input type="text" name="s" placeholder="Senha" required>
+                    <select name="c">
+                        <option value="portaria">Portaria (Check-in)</option>
+                        <option value="gerente">Gerente (Admin)</option>
+                    </select>
+                    <input type="number" name="v" placeholder="Cachê R$" step="0.01" class="full-width">
+                    <button type="submit" class="full-width">CADASTRAR MEMBRO</button>
+                </form>
+            </section>
+
+            <section>
+                <h3><i class="fas fa-beer"></i> ESTOQUE DO BAR</h3>
+                <form method="POST">
                     <input type="hidden" name="form_tipo" value="produto">
-                    <input type="text" name="n" placeholder="Produto" required>
-                    <input type="text" name="img" placeholder="Imagem (ex: original.png)">
-                    <input type="number" name="pc" placeholder="Custo R$" step="0.01">
-                    <input type="number" name="pv" placeholder="Venda R$" step="0.01">
-                    <input type="number" name="e" placeholder="Estoque" style="grid-column: span 2;">
-                    <button type="submit" class="btn">ADICIONAR ITEM</button>
+                    <input type="text" name="n" placeholder="Nome do Produto" required>
+                    <input type="text" name="img" placeholder="Imagem (cerveja.png)">
+                    <input type="number" name="pc" placeholder="Preço Custo" step="0.01">
+                    <input type="number" name="pv" placeholder="Preço Venda" step="0.01">
+                    <input type="number" name="e" placeholder="Estoque Inicial" class="full-width">
+                    <button type="submit" class="full-width">ADICIONAR AO BAR</button>
                 </form>
 
                 <table>
                     <thead>
-                        <tr><th>Item</th><th>Estoque</th><th>Venda</th></tr>
+                        <tr><th>Produto</th><th>Estoque</th><th>Venda</th></tr>
                     </thead>
                     <tbody>
                         {% for p in produtos %}
                         <tr>
                             <td>{{ p.nome }}</td>
-                            <td><span class="badge">{{ p.estoque }} un</span></td>
+                            <td><span class="badge">{{ p.estoque }} UN</span></td>
                             <td>R$ {{ p.preco_venda }}</td>
                         </tr>
                         {% endfor %}
@@ -93,28 +109,28 @@
             </section>
         </div>
 
-        <div class="col-right">
+        <div class="col">
             <section>
-                <h3><i class="fas fa-dollar-sign"></i> Lançar Despesa</h3>
+                <h3><i class="fas fa-wallet"></i> LANÇAR DESPESA FIXA</h3>
                 <form method="POST">
                     <input type="hidden" name="form_tipo" value="custo">
-                    <input type="text" name="d" placeholder="Ex: Gelo, DJ, Segurança" required>
-                    <input type="number" name="v" placeholder="Valor R$" step="0.01" required>
-                    <button type="submit" class="btn" style="background: #333; color: #fff;">REGISTRAR</button>
+                    <input type="text" name="d" placeholder="Descrição (Ex: Gelo, Aluguel)" required class="full-width">
+                    <input type="number" name="v" placeholder="Valor R$" step="0.01" required class="full-width">
+                    <button type="submit" class="full-width" style="background: #333; color: #fff;">REGISTRAR SAÍDA</button>
                 </form>
             </section>
 
             <section>
-                <h3><i class="fas fa-clock"></i> Pendentes</h3>
-                {% for c in clientes_pendentes %}
-                <div class="item-list">
-                    <span style="font-weight: bold;">{{ c.nome }}</span><br>
-                    <small style="color: #666;">{{ c.telefone }}</small>
+                <h3><i class="fas fa-user-clock"></i> INTERESSADOS (PIX PENDENTE)</h3>
+                <div style="max-height: 300px; overflow-y: auto;">
+                    {% for c in clientes_pendentes %}
+                    <div style="background: #1a1a1a; padding: 10px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #555;">
+                        <strong>{{ c.nome }}</strong><br>
+                        <small style="color: #888;">{{ c.telefone }}</small>
+                    </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
             </section>
-
-            <a href="/login-staff" class="btn-danger">ENCERRAR SESSÃO</a>
         </div>
     </div>
 
