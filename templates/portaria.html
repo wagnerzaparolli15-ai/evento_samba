@@ -7,7 +7,7 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body { background: #000; color: #f1c40f; font-family: sans-serif; text-align: center; padding: 20px; margin: 0; }
-        #reader { width: 100%; max-width: 500px; margin: 20px auto; border: 3px solid #f1c40f; border-radius: 10px; }
+        #reader { width: 100%; max-width: 500px; margin: 20px auto; border: 3px solid #f1c40f; border-radius: 10px; background: #111; }
         .btn-sair { display: inline-block; margin-top: 30px; color: #fff; text-decoration: none; border: 1px solid #333; padding: 10px 20px; border-radius: 5px; }
     </style>
 </head>
@@ -23,9 +23,18 @@
         function onScanSuccess(decodedText) {
             window.location.href = decodedText;
         }
-        function onScanFailure(error) { /* Silencioso até achar o QR */ }
+        function onScanFailure(error) { /* Silencioso */ }
         
-        let html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 250, height: 250} });
+        // CONFIGURAÇÃO OTIMIZADA PARA CELULAR (Força Câmera Traseira)
+        let html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", 
+            { 
+                fps: 10, 
+                qrbox: {width: 250, height: 250},
+                videoConstraints: { facingMode: "environment" } 
+            }, 
+            false
+        );
         html5QrcodeScanner.render(onScanSuccess, onScanFailure);
     </script>
 </body>

@@ -9,14 +9,11 @@
     <style>
         body { background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; text-align: center; padding: 20px; }
         h1 { color: #f1c40f; text-transform: uppercase; border-bottom: 2px solid #333; padding-bottom: 10px; }
-        
         .leitor-box { background: #111; padding: 20px; border-radius: 15px; border: 2px solid #f1c40f; max-width: 500px; margin: 0 auto 30px; }
-        #reader { width: 100%; border-radius: 10px; overflow: hidden; border: none; }
-        
+        #reader { width: 100%; border-radius: 10px; overflow: hidden; border: none; background: #000; }
         .estoque-box { max-width: 500px; margin: auto; text-align: left; background: #111; padding: 20px; border-radius: 15px; border: 1px solid #333; }
         .estoque-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222; }
         .estoque-item:last-child { border-bottom: none; }
-        
         .btn-sair { display: inline-block; background: #e74c3c; color: #fff; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 30px; }
     </style>
 </head>
@@ -26,12 +23,23 @@
 
     <div class="leitor-box">
         <h3 style="margin-top: 0;"><i class="fas fa-camera"></i> ESCANEAR TICKET DO CLIENTE</h3>
-        <p style="color: #aaa; font-size: 0.9rem;">Aponte a câmera para o celular do cliente para liberar o pedido e garantir sua caixinha.</p>
+        <p style="color: #aaa; font-size: 0.9rem;">Aponte a câmera ao vivo para o celular do cliente.</p>
         <div id="reader"></div>
         <script>
             function onScanSuccess(decodedText) { window.location.href = decodedText; }
-            let scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 250, height: 250} });
-            scanner.render(onScanSuccess);
+            function onScanFailure(error) { /* Silencioso */ }
+            
+            // CONFIGURAÇÃO OTIMIZADA PARA CELULAR (Força Câmera Traseira)
+            let html5QrcodeScanner = new Html5QrcodeScanner(
+                "reader", 
+                { 
+                    fps: 10, 
+                    qrbox: {width: 250, height: 250},
+                    videoConstraints: { facingMode: "environment" }
+                }, 
+                false
+            );
+            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
         </script>
     </div>
 
