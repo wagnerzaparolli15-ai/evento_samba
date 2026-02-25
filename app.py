@@ -84,11 +84,13 @@ def ingresso(id):
     qr_checkin = gerar_qr_b64(f"https://evento-samba.onrender.com/validar-entrada/{c.id}")
     return render_template('obrigado.html', c=c, qr_checkin=qr_checkin)
 
-# --- 2. PORTARIA (CÂMERA DE ACESSO) ---
+# --- 2. PORTARIA (CÂMERA E BUSCA MANUAL) ---
 @app.route('/portaria')
 def portaria():
     if session.get('cargo') not in ['admin', 'portaria']: return redirect(url_for('login_staff'))
-    return render_template('portaria.html')
+    # Garante que a lista manual de clientes pagos que não entraram apareça na tela
+    clientes_pendentes = Cliente.query.filter_by(pago=True, na_casa=False).all()
+    return render_template('portaria.html', clientes=clientes_pendentes)
 
 @app.route('/validar-entrada/<int:id>')
 def validar_entrada(id):
@@ -116,12 +118,12 @@ def bar_staff():
 @app.route('/confirmar-pedido/<int:cliente_id>')
 def confirmar_pedido(cliente_id):
     pedidos = Pedido.query.filter_by(cliente_id=cliente_id, status='Pendente').all()
-    func = Equipe.query.filter_by(usuario=session.get('usuario_nome')).first()
+    func_bar = Equipe.query.filter_by(usuario=session.get('usuario_nome')).first()
     for p in pedidos:
         p.status = 'Entregue'
         prod = Produto.query.get(p.produto_id)
         prod.estoque -= 1
-        if func: func.caixinha_total += (prod.preco_venda * 0.10)
+        if func_bar: func_bar.caixinha_total += (prod.preco_venda * 0.10)
     db.session.commit()
     return "<h1>ENTREGA CONFIRMADA COM SUCESSO!</h1><a href='/bar-staff' style='font-size:2rem; color:green; text-decoration:none;'>VOLTAR AO LEITOR</a>"
 
