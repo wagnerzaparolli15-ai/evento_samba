@@ -7,26 +7,19 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --gold: #f1c40f; --bg: #050505; --card: rgba(20, 20, 20, 0.9); --success: #2ecc71; --danger: #e74c3c; }
-        body { 
-            background: linear-gradient(135deg, #050505 0%, #1a1a00 100%); 
-            background-attachment: fixed; color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; 
-        }
+        body { background: linear-gradient(135deg, #050505 0%, #1a1a00 100%); background-attachment: fixed; color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
         .logo-header { text-align: center; margin-bottom: 30px; }
         .logo-header img { width: 100px; filter: drop-shadow(0 0 10px rgba(241, 196, 15, 0.3)); }
         .logo-header h1 { color: var(--gold); letter-spacing: 2px; font-size: 1.4rem; }
-        
         .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
         .stat-card { background: var(--card); padding: 20px; border-radius: 15px; border: 1px solid rgba(241, 196, 15, 0.2); text-align: center; backdrop-filter: blur(10px); }
         .stat-card h3 { margin: 0; color: var(--gold); font-size: 0.7rem; text-transform: uppercase; }
         .stat-card p { font-size: 1.8rem; margin: 10px 0 0; font-weight: bold; }
-
         .section { background: var(--card); padding: 20px; border-radius: 15px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.05); }
         h2 { color: var(--gold); margin-top: 0; border-bottom: 1px solid rgba(241, 196, 15, 0.2); padding-bottom: 10px; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
-        
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th { color: var(--gold); font-size: 0.7rem; text-transform: uppercase; padding: 10px; text-align: left; }
         td { padding: 10px; border-bottom: 1px solid #222; font-size: 0.9rem; }
-
         input, select { background: #000; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 8px; width: 100%; box-sizing: border-box; }
         .btn-save { background: var(--success); color: #000; border: none; padding: 8px 12px; border-radius: 5px; font-weight: bold; cursor: pointer; }
         .btn-add { background: var(--gold); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; width: 100%; }
@@ -35,8 +28,8 @@
 <body>
 
     <div class="logo-header">
-        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
-        <h1>GESTÃO ESTRATÉGICA BAFAFÁ</h1>
+        <img src="{{ url_for('static', filename='logo.png') }}">
+        <h1>GESTÃO ESTRATÉGICA MASTER</h1>
     </div>
 
     <div class="dashboard">
@@ -46,46 +39,41 @@
     </div>
 
     <div class="section">
-        <h2><i class="fas fa-user-plus"></i> Cadastrar Novo Funcionário (Staff)</h2>
+        <h2><i class="fas fa-user-plus"></i> Cadastrar Novo Funcionário</h2>
         <form method="POST">
             <input type="hidden" name="form_tipo" value="equipe">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <input type="text" name="n" placeholder="Nome do Funcionário" required>
-                <input type="text" name="u" placeholder="Usuário (Login)" required>
+                <input type="text" name="n" placeholder="Nome" required>
+                <input type="text" name="u" placeholder="Usuário" required>
                 <input type="text" name="s" placeholder="Senha" required>
                 <select name="c">
-                    <option value="portaria">Portaria (Liza)</option>
+                    <option value="portaria">Portaria</option>
                     <option value="bar">Barman</option>
                     <option value="admin">Administrador</option>
                 </select>
             </div>
-            <button type="submit" class="btn-add">CRIAR ACESSO STAFF</button>
+            <button type="submit" class="btn-add">CADASTRAR FUNCIONÁRIO</button>
         </form>
-
-        <table style="margin-top: 20px;">
-            <tr><th>Nome</th><th>Cargo</th><th>Caixinha (10%)</th></tr>
+        <table>
+            <tr><th>Nome</th><th>Cargo</th><th>Caixinha</th></tr>
             {% for e in equipe %}
-            <tr>
-                <td>{{ e.nome }}</td>
-                <td>{{ e.cargo|capitalize }}</td>
-                <td style="color:var(--success)">R$ {{ "{:,.2f}".format(e.caixinha_total) }}</td>
-            </tr>
+            <tr><td>{{ e.nome }}</td><td>{{ e.cargo|capitalize }}</td><td style="color:var(--success)">R$ {{ "{:,.2f}".format(e.caixinha_total) }}</td></tr>
             {% endfor %}
         </table>
     </div>
 
     <div class="section">
-        <h2><i class="fas fa-beer"></i> Estoque e Preços do Bar</h2>
+        <h2><i class="fas fa-beer"></i> Controle de Estoque de Bebidas</h2>
         <table>
-            <tr><th>Produto</th><th>Venda</th><th>Estoque</th><th>Ação</th></tr>
+            <tr><th>Produto</th><th>Preço Venda</th><th>Preço Custo</th><th>Estoque</th><th>Ação</th></tr>
             {% for p in produtos %}
             <tr>
                 <form action="/atualizar-produto/{{ p.id }}" method="POST">
-                    <td>{{ p.nome }}</td>
+                    <td><strong>{{ p.nome }}</strong></td>
                     <td><input type="number" step="0.01" name="pv" value="{{ p.preco_venda }}" style="width:80px;"></td>
+                    <td><input type="number" step="0.01" name="pc" value="{{ p.preco_custo }}" style="width:80px;"></td>
                     <td><input type="number" name="e" value="{{ p.estoque }}" style="width:60px;"></td>
-                    <td><button type="submit" class="btn-save">OK</button></td>
-                    <input type="hidden" name="pc" value="{{ p.preco_custo }}">
+                    <td><button type="submit" class="btn-save">SALVAR</button></td>
                 </form>
             </tr>
             {% endfor %}
@@ -93,22 +81,34 @@
     </div>
 
     <div class="section">
-        <h2><i class="fas fa-check-double"></i> Pendências de Pagamento</h2>
+        <h2><i class="fas fa-file-invoice-dollar"></i> Lançar Despesas do Evento</h2>
+        <form method="POST">
+            <input type="hidden" name="form_tipo" value="custo">
+            <div style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 10px;">
+                <input type="text" name="d" placeholder="Descrição (Segurança, DJ, Gelo)" required>
+                <input type="number" step="0.01" name="v" placeholder="Valor R$" required>
+                <button type="submit" class="btn-save" style="background:var(--gold)">LANÇAR</button>
+            </div>
+        </form>
         <table>
-            {% for c in clientes_pendentes %}
-            <tr>
-                <td>{{ c.nome }}</td>
-                <td><a href="/aprovar-manual/{{ c.id }}" class="btn-save" style="text-decoration:none; background:var(--gold)">APROVAR</a></td>
-            </tr>
-            {% else %}
-            <tr><td style="text-align:center; opacity:0.5;">Nenhuma pendência.</td></tr>
+            <tr><th>Descrição</th><th>Valor</th></tr>
+            {% for c in custos_lista %}
+            <tr><td>{{ c.descricao }}</td><td style="color:var(--danger)">R$ {{ c.valor }}</td></tr>
             {% endfor %}
         </table>
     </div>
 
-    <div style="text-align: center; padding: 20px;">
-        <a href="/logout" style="color: #666; text-decoration: none; font-size: 0.8rem;">SAIR DO SISTEMA</a>
+    <div class="section">
+        <h2><i class="fas fa-check-circle"></i> Aprovação Manual de PIX</h2>
+        <table>
+            {% for c in clientes_pendentes %}
+            <tr><td>{{ c.nome }}</td><td><a href="/aprovar-manual/{{ c.id }}" class="btn-save" style="background:var(--gold); text-decoration:none;">APROVAR</a></td></tr>
+            {% else %}
+            <tr><td style="opacity:0.5; text-align:center;">Nenhuma pendência.</td></tr>
+            {% endfor %}
+        </table>
     </div>
 
+    <div style="text-align: center; padding: 20px;"><a href="/logout" style="color:#666; text-decoration:none;">SAIR</a></div>
 </body>
 </html>
