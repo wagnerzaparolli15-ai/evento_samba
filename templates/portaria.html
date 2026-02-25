@@ -2,25 +2,102 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Portaria Bafafá</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check-in Portaria - Bafafá</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: sans-serif; background: #000; color: #fff; padding: 15px; }
-        .cliente-box { background: #111; padding: 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;}
-        .btn-validar { background: #00ff88; color: #000; padding: 10px; text-decoration: none; border-radius: 5px; font-weight: bold; }
+        :root { --gold: #f1c40f; --bg: #000; --card: #111; --success: #00ff88; }
+        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; }
+        
+        .header { text-align: center; border-bottom: 2px solid var(--gold); padding-bottom: 15px; margin-bottom: 20px; }
+        .header h2 { margin: 5px 0; color: var(--gold); text-transform: uppercase; letter-spacing: 2px; }
+        
+        .search-box { margin-bottom: 20px; }
+        .search-box input { width: 100%; padding: 15px; border-radius: 10px; border: 1px solid #333; background: #222; color: #fff; font-size: 1rem; box-sizing: border-box; }
+
+        .lista-clientes { display: flex; flex-direction: column; gap: 12px; }
+        
+        .cliente-box { 
+            background: var(--card); 
+            padding: 18px; 
+            border-radius: 12px; 
+            border: 1px solid #222; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        
+        .info h4 { margin: 0; font-size: 1.1rem; color: #fff; }
+        .info span { font-size: 0.8rem; color: #888; }
+
+        .btn-validar { 
+            background: var(--success); 
+            color: #000; 
+            padding: 12px 20px; 
+            text-decoration: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            font-size: 0.9rem;
+            transition: 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-validar:active { transform: scale(0.95); }
+
+        .empty-state { text-align: center; color: #555; margin-top: 50px; font-style: italic; }
+        
+        .footer-nav { margin-top: 30px; text-align: center; border-top: 1px solid #222; padding-top: 15px; }
+        .footer-nav a { color: #666; text-decoration: none; font-size: 0.9rem; }
     </style>
 </head>
 <body>
-    <h2>Check-in Portaria</h2>
-    <p>Olá, {{ session.usuario_nome }}</p>
-    <hr>
-    {% for c in clientes %}
-    <div class="cliente-box">
-        <span>{{ c.nome }}</span>
-        <a href="/validar-entrada/{{ c.id }}" class="btn-validar">VALIDAR</a>
+
+    <div class="header">
+        <i class="fas fa-id-card-alt" style="color: var(--gold); font-size: 2rem;"></i>
+        <h2>Portaria</h2>
+        <p style="font-size: 0.8rem; margin: 0;">Operador: <strong>{{ session.usuario_nome }}</strong></p>
     </div>
-    {% endfor %}
-    <br>
-    <a href="/logout" style="color: #666;">Sair do Sistema</a>
+
+    <div class="search-box">
+        <input type="text" id="filtro" placeholder="🔍 Buscar nome do cliente..." onkeyup="filtrarNomes()">
+    </div>
+
+    <div class="lista-clientes" id="lista">
+        {% for c in clientes %}
+        <div class="cliente-box">
+            <div class="info">
+                <h4>{{ c.nome }}</h4>
+                <span><i class="fas fa-phone-alt"></i> {{ c.telefone }}</span>
+            </div>
+            <a href="/validar-entrada/{{ c.id }}" class="btn-validar">VALIDAR</a>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-user-slash" style="font-size: 3rem; margin-bottom: 10px;"></i><br>
+            Nenhum cliente com PIX aprovado no momento.
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="footer-nav">
+        <a href="/logout"><i class="fas fa-sign-out-alt"></i> Sair do Sistema</a>
+    </div>
+
+    <script>
+        function filtrarNomes() {
+            let input = document.getElementById('filtro').value.toUpperCase();
+            let lista = document.getElementById('lista');
+            let cards = lista.getElementsByClassName('cliente-box');
+
+            for (let i = 0; i < cards.length; i++) {
+                let nome = cards[i].getElementsByTagName('h4')[0];
+                if (nome) {
+                    let texto = nome.textContent || nome.innerText;
+                    cards[i].style.display = texto.toUpperCase().indexOf(input) > -1 ? "" : "none";
+                }
+            }
+        }
+    </script>
 </body>
 </html>
