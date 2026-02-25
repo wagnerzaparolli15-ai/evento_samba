@@ -3,28 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leitor de Câmera - Bafafá</title>
+    <title>Check-in Câmera - Bafafá</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { background: #000; color: #f1c40f; font-family: sans-serif; text-align: center; padding: 20px; }
-        #reader { width: 100%; max-width: 500px; margin: 20px auto; border: 2px solid #f1c40f; border-radius: 10px; overflow: hidden; }
+        body { background: #000; color: #f1c40f; font-family: sans-serif; text-align: center; padding: 20px; margin: 0; }
+        #reader { width: 100%; max-width: 500px; margin: 20px auto; border: 3px solid #f1c40f; border-radius: 10px; }
         .btn-sair { display: inline-block; margin-top: 30px; color: #fff; text-decoration: none; border: 1px solid #333; padding: 10px 20px; border-radius: 5px; }
     </style>
 </head>
 <body>
-    <h2>LIZA: LEITURA DE INGRESSO</h2>
+    <h2>LIZA: ESCANEAR INGRESSO</h2>
+    <p style="color: white; font-size: 0.9rem;">Aponte a câmera para o QR Code do ingresso do cliente</p>
+    
     <div id="reader"></div>
-    <div id="result"></div>
+
     <a href="/logout" class="btn-sair">Sair do Sistema</a>
 
     <script>
-        function onScanSuccess(decodedText, decodedResult) {
-            // Redireciona para o link que está dentro do QR Code (a rota /validar-entrada/ID)
+        function onScanSuccess(decodedText) {
             window.location.href = decodedText;
         }
-
-        function onScanFailure(error) { /* Ignora erros de leitura de frames vazios */ }
-
+        function onScanFailure(error) { /* Silencioso até achar o QR */ }
+        
         let html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 250, height: 250} });
         html5QrcodeScanner.render(onScanSuccess, onScanFailure);
     </script>
