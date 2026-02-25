@@ -1,33 +1,122 @@
-<div class="main-admin">
-    <div class="card-fin">
-        <h3>💰 RESUMO FINANCEIRO</h3>
-        <p>Entradas (Ingressos): R$ {{ total_entradas }}</p>
-        <p>Custos (Staff + Operação): R$ {{ total_custos }}</p>
-        <h2 style="color: #00ff88;">LUCRO ESTIMADO: R$ {{ total_entradas - total_custos }}</h2>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo - Bafafá 2026</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #f1c40f; --bg: #000; --card: #111; --text: #fff; --success: #00ff88; --danger: #ff4d4d; }
+        
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 20px; }
+        
+        .header { text-align: center; border-bottom: 2px solid var(--primary); padding-bottom: 20px; margin-bottom: 30px; }
+        .header img { width: 80px; border-radius: 50%; margin-bottom: 10px; }
+        .header h1 { margin: 0; color: var(--primary); font-size: 1.8rem; }
+        
+        .grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .stat-card { background: var(--card); padding: 20px; border-radius: 15px; border: 1px solid #333; text-align: center; }
+        .stat-card h3 { margin: 0; font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-card h2 { margin: 10px 0 0; font-size: 1.5rem; color: var(--primary); }
+        
+        .main-content { display: grid; grid-template-columns: 1fr; gap: 20px; max-width: 1200px; margin: auto; }
+        @media (min-width: 900px) { .main-content { grid-template-columns: 2fr 1fr; } }
+        
+        section { background: var(--card); padding: 20px; border-radius: 15px; border: 1px solid #333; margin-bottom: 20px; }
+        h3 { color: var(--primary); margin-top: 0; border-bottom: 1px solid #222; padding-bottom: 10px; }
+        
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #444; background: #222; color: #fff; box-sizing: border-box; }
+        
+        .btn { width: 100%; padding: 12px; background: var(--primary); color: #000; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .btn:hover { background: #fff; transform: scale(1.02); }
+        .btn-danger { background: transparent; border: 1px solid var(--danger); color: var(--danger); font-size: 0.8rem; padding: 5px; margin-top: 20px; display: block; text-decoration: none; text-align: center; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
+        th { text-align: left; color: #666; padding: 10px; border-bottom: 1px solid #333; }
+        td { padding: 10px; border-bottom: 1px solid #222; }
+        
+        .badge { background: rgba(0, 255, 136, 0.1); color: var(--success); padding: 4px 8px; border-radius: 5px; font-weight: bold; }
+        .item-list { background: #1a1a1a; padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid var(--primary); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <img src="/static/logo.png" alt="Logo Bafafá">
+        <h1>Bafafá Business <small style="font-size: 0.6rem; vertical-align: middle;">v2.0</small></h1>
+        <p style="font-size: 0.9rem; color: #666;">Olá, <strong>{{ session.usuario_nome }}</strong></p>
     </div>
 
-    <div class="secoes">
-        <section>
-            <h3>🍺 GESTÃO DO BAR</h3>
-            <form method="POST">
-                <input type="hidden" name="form_tipo" value="produto">
-                <input type="text" name="n" placeholder="Nome da Bebida" required>
-                <input type="number" name="pc" placeholder="Preço Custo" step="0.01">
-                <input type="number" name="pv" placeholder="Preço Venda" step="0.01">
-                <input type="number" name="e" placeholder="Estoque">
-                <input type="text" name="img" placeholder="Nome da Imagem (cerveja.png)">
-                <button type="submit" class="btn">CADASTRAR PRODUTO</button>
-            </form>
-        </section>
-
-        <section>
-            <h3>💸 LANÇAR CUSTO OPERACIONAL</h3>
-            <form method="POST">
-                <input type="hidden" name="form_tipo" value="custo">
-                <input type="text" name="d" placeholder="Descrição (ex: Aluguel de Som)">
-                <input type="number" name="v" placeholder="Valor R$">
-                <button type="submit" class="btn">REGISTRAR GASTO</button>
-            </form>
-        </section>
+    <div class="grid-stats">
+        <div class="stat-card">
+            <h3>💰 Faturamento</h3>
+            <h2>R$ {{ "{:,.2f}".format(total_entradas) }}</h2>
+        </div>
+        <div class="stat-card">
+            <h3>💸 Custos</h3>
+            <h2 style="color: var(--danger);">R$ {{ "{:,.2f}".format(total_custos) }}</h2>
+        </div>
+        <div class="stat-card" style="border-color: var(--success);">
+            <h3>📈 Lucro</h3>
+            <h2 style="color: var(--success);">R$ {{ "{:,.2f}".format(total_entradas - total_custos) }}</h2>
+        </div>
     </div>
-</div>
+
+    <div class="main-content">
+        <div class="col-left">
+            <section>
+                <h3><i class="fas fa-beer"></i> Gestão do Bar</h3>
+                <form method="POST" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <input type="hidden" name="form_tipo" value="produto">
+                    <input type="text" name="n" placeholder="Produto" required>
+                    <input type="text" name="img" placeholder="Imagem (ex: original.png)">
+                    <input type="number" name="pc" placeholder="Custo R$" step="0.01">
+                    <input type="number" name="pv" placeholder="Venda R$" step="0.01">
+                    <input type="number" name="e" placeholder="Estoque" style="grid-column: span 2;">
+                    <button type="submit" class="btn">ADICIONAR ITEM</button>
+                </form>
+
+                <table>
+                    <thead>
+                        <tr><th>Item</th><th>Estoque</th><th>Venda</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for p in produtos %}
+                        <tr>
+                            <td>{{ p.nome }}</td>
+                            <td><span class="badge">{{ p.estoque }} un</span></td>
+                            <td>R$ {{ p.preco_venda }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+        </div>
+
+        <div class="col-right">
+            <section>
+                <h3><i class="fas fa-dollar-sign"></i> Lançar Despesa</h3>
+                <form method="POST">
+                    <input type="hidden" name="form_tipo" value="custo">
+                    <input type="text" name="d" placeholder="Ex: Gelo, DJ, Segurança" required>
+                    <input type="number" name="v" placeholder="Valor R$" step="0.01" required>
+                    <button type="submit" class="btn" style="background: #333; color: #fff;">REGISTRAR</button>
+                </form>
+            </section>
+
+            <section>
+                <h3><i class="fas fa-clock"></i> Pendentes</h3>
+                {% for c in clientes_pendentes %}
+                <div class="item-list">
+                    <span style="font-weight: bold;">{{ c.nome }}</span><br>
+                    <small style="color: #666;">{{ c.telefone }}</small>
+                </div>
+                {% endfor %}
+            </section>
+
+            <a href="/login-staff" class="btn-danger">ENCERRAR SESSÃO</a>
+        </div>
+    </div>
+
+</body>
+</html>
