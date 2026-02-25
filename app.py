@@ -84,19 +84,21 @@ def ingresso(id):
     qr_checkin = gerar_qr_b64(f"https://evento-samba.onrender.com/validar-entrada/{c.id}")
     return render_template('obrigado.html', c=c, qr_checkin=qr_checkin)
 
-# --- 2. PORTARIA (CÂMERA E BUSCA MANUAL) ---
+# --- 2. PORTARIA (FLUXO CONTÍNUO CORRIGIDO) ---
 @app.route('/portaria')
 def portaria():
     if session.get('cargo') not in ['admin', 'portaria']: return redirect(url_for('login_staff'))
-    # Garante que a lista manual de clientes pagos que não entraram apareça na tela
     clientes_pendentes = Cliente.query.filter_by(pago=True, na_casa=False).all()
-    return render_template('portaria.html', clientes=clientes_pendentes)
+    # Pega a mensagem de sucesso se a Liza acabou de validar alguém
+    msg = request.args.get('msg')
+    return render_template('portaria.html', clientes=clientes_pendentes, msg=msg)
 
 @app.route('/validar-entrada/<int:id>')
 def validar_entrada(id):
     c = Cliente.query.get_or_404(id)
     c.na_casa = True; db.session.commit()
-    return render_template('recepcao.html', c=c)
+    # LÓGICA CORRIGIDA: Reinicia a portaria para o próximo cliente automaticamente
+    return redirect(url_for('portaria', msg=f"Entrada de {c.nome} liberada!"))
 
 # --- 3. BAR DIGITAL (TELA EXCLUSIVA DO CLIENTE) ---
 @app.route('/bar-digital/<int:id>', methods=['GET', 'POST'])
@@ -125,7 +127,7 @@ def confirmar_pedido(cliente_id):
         prod.estoque -= 1
         if func_bar: func_bar.caixinha_total += (prod.preco_venda * 0.10)
     db.session.commit()
-    return "<h1>ENTREGA CONFIRMADA COM SUCESSO!</h1><a href='/bar-staff' style='font-size:2rem; color:green; text-decoration:none;'>VOLTAR AO LEITOR</a>"
+    return "<h1>ENTREGA CONFIRMADA!</h1><br><a href='/bar-staff' style='font-size:2rem; color:green; text-decoration:none;'>Ler Próximo Pedido</a>"
 
 # --- 5. ADMINISTRAÇÃO E FINANCEIRO ---
 @app.route('/admin_total', methods=['GET', 'POST'])
@@ -145,13 +147,7 @@ def admin_total():
     entradas = db.session.query(func.sum(Cliente.valor_total)).filter_by(pago=True).scalar() or 0
     custos = db.session.query(func.sum(CustoOperacional.valor)).scalar() or 0
     
-    return render_template('admin_total.html', 
-                           total_entradas=entradas, 
-                           total_custos=custos, 
-                           clientes_pendentes=Cliente.query.filter_by(pago=False).all(), 
-                           equipe=Equipe.query.all(), 
-                           produtos=Produto.query.all(), 
-                           custos_lista=CustoOperacional.query.all())
+    return render_template('admin_total.html', total_entradas=entradas, total_custos=custos, clientes_pendentes=Cliente.query.filter_by(pago=False).all(), equipe=Equipe.query.all(), produtos=Produto.query.all(), custos_lista=CustoOperacional.query.all())
 
 @app.route('/aprovar-manual/<int:id>')
 def aprovar_manual(id):
