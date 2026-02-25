@@ -2,29 +2,31 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Ingressos - Bafafá</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bafafá 2026 - Reserva</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        :root { --gold: #f1c40f; --bg: #050505; }
         body { 
-            background: #000 url("{{ url_for('static', filename='fundo.jpg') }}") no-repeat center center fixed; 
-            background-size: cover; 
-            font-family: sans-serif; color: white; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; 
+            background: linear-gradient(135deg, #050505 0%, #1a1a00 100%);
+            background-attachment: fixed; color: #fff; font-family: 'Segoe UI', sans-serif;
+            display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0;
         }
-        .box { background: rgba(0,0,0,0.9); padding: 30px; border-radius: 20px; border: 2px solid #f1c40f; text-align: center; max-width: 400px; }
-        .logo { width: 120px; margin-bottom: 20px; border-radius: 10px; }
-        .preco { font-size: 45px; color: #2ecc71; font-weight: bold; margin: 15px 0; }
-        input { width: 90%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; }
-        button { width: 100%; background: #f1c40f; color: #000; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; border: none; }
+        .container { background: rgba(20,20,20,0.9); padding: 30px; border-radius: 20px; border: 1px solid rgba(241,196,15,0.2); width: 90%; max-width: 400px; text-align: center; backdrop-filter: blur(10px); }
+        img.logo { width: 120px; margin-bottom: 20px; }
+        h2 { color: var(--gold); margin-bottom: 20px; }
+        input { background: #000; color: #fff; border: 1px solid #333; padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 15px; box-sizing: border-box; }
+        .btn { background: var(--gold); color: #000; border: none; padding: 15px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; text-transform: uppercase; }
     </style>
 </head>
 <body>
-    <div class="box">
-        <img src="{{ url_for('static', filename='logo.jpg') }}" class="logo">
-        <h1>INGRESSO + FEIJOADA</h1>
-        <div class="preco">R$ 45,00</div>
+    <div class="container">
+        <img src="{{ url_for('static', filename='logo.png') }}" class="logo">
+        <h2>RESERVA DE INGRESSO</h2>
         <form action="/reservar" method="POST">
-            <input type="text" name="nome" placeholder="Nome Completo" required>
-            <input type="tel" name="telefone" placeholder="WhatsApp com DDD" required>
-            <button type="submit">GERAR PIX</button>
+            <input type="text" name="nome" placeholder="Seu Nome Completo" required>
+            <input type="text" name="telefone" placeholder="Seu Telefone/WhatsApp" required>
+            <button type="submit" class="btn">GERAR PIX DE PAGAMENTO</button>
         </form>
     </div>
 </body>
