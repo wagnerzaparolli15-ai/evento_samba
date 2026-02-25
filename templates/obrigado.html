@@ -2,24 +2,28 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Seu Ingresso - Bafafá</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seu Ingresso - Bafafá 2026</title>
     <style>
-        body { font-family: sans-serif; background: #000; color: #fff; text-align: center; padding: 20px; }
-        .ingresso { background: #111; border: 2px dashed #00ff88; padding: 25px; border-radius: 15px; }
-        .status { color: #00ff88; font-weight: bold; }
+        body { background: #000; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
+        .ticket { border: 2px solid #f1c40f; border-radius: 15px; padding: 20px; max-width: 400px; margin: auto; background: #111; }
+        .qr-box { background: #fff; padding: 10px; display: inline-block; border-radius: 10px; margin: 20px 0; }
+        .status { color: #00ff88; font-weight: bold; text-transform: uppercase; }
     </style>
 </head>
 <body>
-    <div class="ingresso">
-        <h1>Bafafá 2026</h1>
-        <p>Apresente este ingresso na porta</p>
-        <hr>
+    <div class="ticket">
+        <h1 style="color: #f1c40f;">BAFAFÁ 2026</h1>
+        <p class="status">Pagamento Confirmado</p>
+        <hr border="1" color="#333">
         <h2>{{ c.nome }}</h2>
-        <p class="status">PAGAMENTO CONFIRMADO via {{ c.metodo.upper() }}</p>
-        <p>ID: #{{ c.id }}</p>
-        <br>
-        <p style="font-size: 12px; color: #666;">O link do bar será liberado no check-in</p>
+        <p>Telefone: {{ c.telefone }}</p>
+
+        <div class="qr-box">
+            <img src="data:image/png;base64,{{ qr_checkin }}" width="200">
+        </div>
+
+        <p style="font-size: 0.8rem; color: #888;">Apresente este código na portaria para liberar sua entrada.</p>
     </div>
 </body>
 </html>
