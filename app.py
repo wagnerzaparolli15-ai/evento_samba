@@ -115,10 +115,17 @@ def bar_digital(id):
     
     produtos = Produto.query.filter(Produto.estoque > 0).all()
     carrinho = Pedido.query.filter_by(cliente_id=c.id, status='No Carrinho').all()
+    
+    # ACRESCENTADO: Puxar o nome da bebida pro cliente ver na nota
+    itens_carrinho = []
+    for item in carrinho:
+        p = Produto.query.get(item.produto_id)
+        itens_carrinho.append(p.nome if p else "Produto")
+
     pedidos_finalizados = Pedido.query.filter_by(cliente_id=c.id, status='Pagamento Pendente').all()
     qr_pedido = gerar_qr_b64(f"https://evento-samba.onrender.com/confirmar-pedido/{c.id}") if pedidos_finalizados else None
     
-    return render_template('bar_digital.html', produtos=produtos, c=c, carrinho=carrinho, pedidos=pedidos_finalizados, qr_pedido=qr_pedido)
+    return render_template('bar_digital.html', produtos=produtos, c=c, carrinho_nomes=itens_carrinho, pedidos=pedidos_finalizados, qr_pedido=qr_pedido)
 
 @app.route('/finalizar-carrinho/<int:id>', methods=['POST'])
 def finalizar_carrinho(id):
@@ -193,18 +200,19 @@ def logout(): session.clear(); return redirect(url_for('login_staff'))
 @app.route('/reset-bruto-bafafa')
 def reset():
     db.drop_all(); db.create_all()
-    # LISTA COMPLETA DE 10 PRODUTOS
+    # ACRESCENTADO: Nomes limpos, Feijoada e Caipirinha
     itens = [
-        ("Antarctica Lata (fardo 18)", "antarctica.jpg"), ("Brahma Lata (fardo 18)", "brahma.jpg"),
-        ("Heineken 350ml (fardo 12)", "heineken.jpg"), ("Amstel 473ml (fardo 12)", "amstel.jpg"),
-        ("Spaten 350ml (fardo 12)", "spaten.jpg"), ("Coca-Cola Lata (fardo 12)", "coca.jpg"),
-        ("Guaraná Ant. (fardo 12)", "guarana.jpg"), ("Red Bull (fardo 24)", "redbull.jpg"),
-        ("Red Label (Unidade)", "redlabel.jpg"), ("Black Label (Unidade)", "blacklabel.jpg")
+        ("Antarctica", "antarctica.jpg"), ("Brahma", "brahma.jpg"),
+        ("Heineken", "heineken.jpg"), ("Amstel", "amstel.jpg"),
+        ("Spaten", "spaten.jpg"), ("Coca-Cola", "coca.jpg"),
+        ("Guaraná Ant.", "guarana.jpg"), ("Red Bull", "redbull.jpg"),
+        ("Red Label", "redlabel.jpg"), ("Black Label", "blacklabel.jpg"),
+        ("Feijoada Bafafá", "feijoada.jpg"), ("Caipirinha Limão", "caipirinha.jpg")
     ]
     for n, img in itens: db.session.add(Produto(nome=n, imagem_url=img, preco_venda=0, preco_custo=0, estoque=0))
     db.session.add(Equipe(nome='Wagner Master', usuario='wagner', senha='123', cargo='admin'))
     db.session.commit()
-    return "✅ RESET OK: VITRINE DE 10 ITENS PRONTA!"
+    return "✅ RESET OK: CARDÁPIO COMPLETO PRONTO!"
 
 if __name__ == '__main__':
     with app.app_context(): db.create_all()
