@@ -2,52 +2,125 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard Master - Bafafá</title>
+    <title>Painel de Controle Master - Bafafá 2026</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --gold: #f1c40f; --bg: #000; --card: #111; }
-        body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 20px; }
-        .logo-adm { text-align: center; margin-bottom: 20px; }
-        .logo-adm img { width: 120px; }
-        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .stat-card { background: var(--card); padding: 20px; border-radius: 10px; border-left: 5px solid var(--gold); text-align: center; }
-        .section { background: var(--card); padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #333; }
-        table { width: 100%; border-collapse: collapse; }
+        :root { --gold: #f1c40f; --bg: #000; --card: #111; --success: #2ecc71; --danger: #e74c3c; }
+        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
+        
+        .logo-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid var(--gold); padding-bottom: 20px; }
+        .logo-header img { width: 100px; margin-bottom: 10px; }
+        
+        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: var(--card); padding: 25px; border-radius: 15px; border-left: 5px solid var(--gold); text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .stat-card h3 { margin: 0; color: var(--gold); font-size: 0.9rem; text-transform: uppercase; }
+        .stat-card p { font-size: 2rem; margin: 10px 0 0; font-weight: bold; }
+
+        .section { background: var(--card); padding: 25px; border-radius: 15px; margin-bottom: 30px; border: 1px solid #222; }
+        h2 { color: var(--gold); margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 15px; font-size: 1.3rem; display: flex; align-items: center; gap: 10px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #222; }
-        input { background: #222; color: #fff; border: 1px solid #444; padding: 5px; border-radius: 5px; }
-        .btn-green { background: #2ecc71; color: #000; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        th { color: var(--gold); font-size: 0.8rem; text-transform: uppercase; }
+
+        input, select { background: #1a1a1a; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 8px; width: 100%; box-sizing: border-box; }
+        .btn-save { background: var(--success); color: #000; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-add { background: var(--gold); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-approve { background: var(--success); color: #000; padding: 8px 12px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
-    <div class="logo-adm">
-        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
-        <h1 style="color: var(--gold);">ADMINISTRAÇÃO BAFAFÁ</h1>
+    <div class="logo-header">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Bafafá">
+        <h1>GESTOR ESTRATÉGICO BAFAFÁ 2026</h1>
     </div>
 
     <div class="dashboard">
-        <div class="stat-card"><h3>Entradas</h3><p>R$ {{ total_entradas }}</p></div>
-        <div class="stat-card"><h3>Custos</h3><p style="color:red;">R$ {{ total_custos }}</p></div>
-        <div class="stat-card"><h3>Lucro</h3><p style="color:#00ff88;">R$ {{ total_entradas - total_custos }}</p></div>
+        <div class="stat-card"><h3>Receita PIX</h3><p>R$ {{ "{:,.2f}".format(total_entradas) }}</p></div>
+        <div class="stat-card"><h3>Custos Operacionais</h3><p style="color: var(--danger);">R$ {{ "{:,.2f}".format(total_custos) }}</p></div>
+        <div class="stat-card"><h3>Lucro Estimado</h3><p style="color: var(--success);">R$ {{ "{:,.2f}".format(total_entradas - total_custos) }}</p></div>
     </div>
 
     <div class="section">
-        <h2><i class="fas fa-beer"></i> Edição Rápida de Preços e Estoque</h2>
+        <h2><i class="fas fa-user-check"></i> Aprovação Manual de PIX</h2>
+        <table>
+            <tr><th>Nome</th><th>Telefone</th><th>Ação</th></tr>
+            {% for c in clientes_pendentes %}
+            <tr>
+                <td>{{ c.nome }}</td>
+                <td>{{ c.telefone }}</td>
+                <td><a href="/aprovar-manual/{{ c.id }}" class="btn-approve">APROVAR AGORA</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" style="text-align:center; color:#555;">Nenhum pagamento pendente.</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div class="section">
+        <h2><i class="fas fa-beer"></i> Gestão de Estoque e Preços (Bar)</h2>
         <table>
             <tr><th>Produto</th><th>Venda (R$)</th><th>Custo (R$)</th><th>Estoque</th><th>Ação</th></tr>
             {% for p in produtos %}
             <tr>
                 <form action="/atualizar-produto/{{ p.id }}" method="POST">
                     <td><strong>{{ p.nome }}</strong></td>
-                    <td><input type="number" step="0.01" name="pv" value="{{ p.preco_venda }}"></td>
-                    <td><input type="number" step="0.01" name="pc" value="{{ p.preco_custo }}"></td>
-                    <td><input type="number" name="e" value="{{ p.estoque }}"></td>
-                    <td><button type="submit" class="btn-green">SALVAR</button></td>
+                    <td><input type="number" step="0.01" name="pv" value="{{ p.preco_venda }}" style="width:90px;"></td>
+                    <td><input type="number" step="0.01" name="pc" value="{{ p.preco_custo }}" style="width:90px;"></td>
+                    <td><input type="number" name="e" value="{{ p.estoque }}" style="width:70px;"></td>
+                    <td><button type="submit" class="btn-save">SALVAR</button></td>
                 </form>
             </tr>
             {% endfor %}
         </table>
     </div>
 
-    </body>
+    <div class="section">
+        <h2><i class="fas fa-file-invoice-dollar"></i> Lançar Custos Gerais</h2>
+        <form method="POST" style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 10px;">
+            <input type="hidden" name="form_tipo" value="custo">
+            <input type="text" name="d" placeholder="Ex: Pagamento Segurança, Gelo, DJ" required>
+            <input type="number" step="0.01" name="v" placeholder="Valor R$" required>
+            <button type="submit" class="btn-add">LANÇAR</button>
+        </form>
+        <table style="margin-top: 20px;">
+            <tr><th>Descrição</th><th>Valor</th></tr>
+            {% for c in custos_lista %}
+            <tr><td>{{ c.descricao }}</td><td style="color:var(--danger)">R$ {{ c.valor }}</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div class="section">
+        <h2><i class="fas fa-users-cog"></i> Equipe e Caixinhas (10%)</h2>
+        <form method="POST" style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 10px;">
+            <input type="hidden" name="form_tipo" value="equipe">
+            <input type="text" name="n" placeholder="Nome" required>
+            <input type="text" name="u" placeholder="Usuário" required>
+            <input type="text" name="s" placeholder="Senha" required>
+            <select name="c">
+                <option value="admin">Administrador</option>
+                <option value="portaria">Portaria (Liza)</option>
+                <option value="bar">Barman</option>
+            </select>
+            <button type="submit" class="btn-add">CADASTRAR</button>
+        </form>
+        <table style="margin-top: 20px;">
+            <tr><th>Funcionário</th><th>Cargo</th><th>Caixinha Acumulada</th></tr>
+            {% for e in equipe %}
+            <tr>
+                <td>{{ e.nome }}</td>
+                <td>{{ e.cargo }}</td>
+                <td style="color:var(--success); font-weight:bold;">R$ {{ "{:,.2f}".format(e.caixinha_total) }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 50px;">
+        <a href="/logout" style="color: #666; text-decoration: none;"><i class="fas fa-sign-out-alt"></i> Sair do Painel</a>
+    </div>
+
+</body>
 </html>
