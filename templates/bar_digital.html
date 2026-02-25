@@ -1,97 +1,44 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bar Digital - Bafafá 2026</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        :root { --gold: #f1c40f; --dark: #000; --card: #111; --success: #2ecc71; }
-        body { background: var(--dark); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 110px; }
-        
-        .header { background: #000; padding: 20px; text-align: center; border-bottom: 2px solid var(--gold); position: sticky; top: 0; z-index: 100; }
-        .header h1 { margin: 0; color: var(--gold); font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px; }
-        
-        .container { padding: 15px; max-width: 600px; margin: auto; }
-        
-        .vitrine { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        
-        .produto-card { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid #222; text-align: center; padding-bottom: 12px; position: relative; }
-        
-        .img-container { width: 100%; height: 140px; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .img-container img { width: 100%; height: 100%; object-fit: contain; padding: 10px; box-sizing: border-box; }
-        
-        .info { padding: 8px; }
-        .info h4 { margin: 0; font-size: 0.9rem; color: #fff; height: 35px; display: flex; align-items: center; justify-content: center; line-height: 1.2; }
-        .preco { color: var(--gold); font-weight: bold; font-size: 1.2rem; display: block; margin: 8px 0; }
-        
-        .btn-add { background: var(--gold); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 90%; font-size: 0.75rem; text-transform: uppercase; }
-        .btn-add:active { transform: scale(0.95); background: #d4ac0d; }
-
-        /* TICKET DE RETIRADA */
-        .ticket-area { margin-top: 30px; background: #0a0a0a; border: 2px dashed var(--gold); border-radius: 15px; padding: 20px; text-align: center; }
-        .qr-white-box { background: #fff; padding: 10px; display: inline-block; border-radius: 10px; margin-top: 15px; }
-        
-        /* BARRA DE CARRINHO FIXA */
-        .footer-cart { position: fixed; bottom: 0; left: 0; right: 0; background: #111; padding: 15px 20px; border-top: 2px solid var(--gold); display: flex; justify-content: space-between; align-items: center; z-index: 1000; }
-        .total-box h5 { margin: 0; color: #888; font-size: 0.7rem; text-transform: uppercase; }
-        .total-box p { margin: 0; font-size: 1.3rem; font-weight: bold; color: var(--gold); }
-        .btn-ver-ticket { background: var(--success); color: #000; padding: 10px 15px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 0.8rem; }
-    </style>
-</head>
-<body>
-
-    <div class="header">
-        <h1><i class="fas fa-beer"></i> BAR DIGITAL BAFAFÁ</h1>
+<div class="container">
+    <div class="vitrine">
+        {% for p in produtos %}
+        <div class="produto-card">
+            <img src="{{ url_for('static', filename='produtos/' + p.imagem_url) }}" style="width:100px;">
+            <h4>{{ p.nome }}</h4>
+            <span class="preco">R$ {{ p.preco_venda }}</span>
+            <form method="POST"><input type="hidden" name="produto_id" value="{{ p.id }}"><button type="submit" class="btn-add">ADICIONAR</button></form>
+        </div>
+        {% endfor %}
     </div>
 
-    <div class="container">
-        <div class="vitrine">
-            {% for p in produtos %}
-            <div class="produto-card">
-                <div class="img-container">
-                    <img src="{{ url_for('static', filename='produtos/' + p.imagem_url) }}" alt="{{ p.nome }}">
-                </div>
-                <div class="info">
-                    <h4>{{ p.nome }}</h4>
-                    <span class="preco">R$ {{ "{:,.2f}".format(p.preco_venda) }}</span>
-                    
-                    <form method="POST">
-                        <input type="hidden" name="produto_id" value="{{ p.id }}">
-                        <button type="submit" class="btn-add"><i class="fas fa-cart-plus"></i> ADICIONAR</button>
-                    </form>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
+    <hr style="border: 0.5px solid #222; margin: 30px 0;">
 
-        {% if pedidos %}
-        <div class="ticket-area" id="ticket">
-            <h3 style="margin: 0; color: var(--success);"><i class="fas fa-check-circle"></i> TICKET LIBERADO</h3>
-            <p style="font-size: 0.8rem; color: #ccc; margin-top: 5px;">Apresente este QR Code ao Barman para retirar.</p>
-            
-            <div class="qr-white-box">
-                <img src="data:image/png;base64,{{ qr_pedido }}" width="160">
-            </div>
-            
-            <div style="margin-top: 15px; font-size: 0.9rem;">
-                <strong>Itens no Ticket:</strong> {{ pedidos|length }}
-            </div>
-        </div>
-        {% endif %}
+    {% if carrinho %}
+    <div class="section" style="background: rgba(241,196,15,0.05); border: 1px solid var(--gold);">
+        <h2><i class="fas fa-shopping-cart"></i> SEU CARRINHO</h2>
+        {% for item in carrinho %}
+            <p style="margin: 5px 0;">• {{ item.produto_id }} (Pendente)</p>
+        {% endfor %}
+        
+        <form action="/finalizar-carrinho/{{ c.id }}" method="POST" style="margin-top: 20px;">
+            <label>Escolha como pagar no balcão:</label>
+            <select name="metodo_pagamento" style="margin: 10px 0;">
+                <option value="PIX">PIX (Direto no Bar)</option>
+                <option value="CARTÃO">Cartão Débito/Crédito</option>
+                <option value="DINHEIRO">Dinheiro Espécie</option>
+            </select>
+            <button type="submit" class="btn-add" style="background: #00ff88;">FECHAR PEDIDO E GERAR QR</button>
+        </form>
     </div>
+    {% endif %}
 
-    <div class="footer-cart">
-        <div class="total-box">
-            <h5>Total acumulado:</h5>
-            <p>R$ {{ "{:,.2f}".format(c.valor_total) }}</p>
+    {% if qr_pedido %}
+    <div class="section" style="border: 2px dashed #00ff88; text-align: center;">
+        <h2 style="color: #00ff88;">PEDIDO PRONTO!</h2>
+        <p>Apresente este QR Code ao Barman:</p>
+        <div style="background: #fff; padding: 10px; display: inline-block; border-radius: 10px;">
+            <img src="data:image/png;base64,{{ qr_pedido }}" width="180">
         </div>
-        {% if pedidos %}
-        <a href="#ticket" class="btn-ver-ticket">MEU TICKET</a>
-        {% else %}
-        <span style="color: #555; font-size: 0.7rem; width: 40%; text-align: right;">Adicione itens para gerar seu ticket.</span>
-        {% endif %}
+        <p style="font-size: 0.8rem; margin-top: 10px;">Prepare seu pagamento escolhido para agilizar.</p>
     </div>
-
-</body>
-</html>
+    {% endif %}
+</div>

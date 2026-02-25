@@ -44,7 +44,8 @@ class Pedido(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     cliente_id = db.Column(db.Integer, db.ForeignKey('cliente.id'))
     produto_id = db.Column(db.Integer, db.ForeignKey('produto.id'))
-    status = db.Column(db.String(20), default='Pendente')
+    status = db.Column(db.String(20), default='No Carrinho') # Status inicial corrigido
+    metodo_pagamento = db.Column(db.String(50))
 
 # --- MOTORES AUXILIARES ---
 def gerar_qr_b64(conteudo):
@@ -107,11 +108,29 @@ def validar_entrada(id):
 def bar_digital(id):
     c = Cliente.query.get_or_404(id)
     if not c.na_casa: return "Check-in pendente."
+    
     if request.method == 'POST':
-        db.session.add(Pedido(cliente_id=c.id, produto_id=request.form.get('produto_id')))
+        db.session.add(Pedido(cliente_id=c.id, produto_id=request.form.get('produto_id'), status='No Carrinho'))
         db.session.commit()
-    qr_pedido = gerar_qr_b64(f"https://evento-samba.onrender.com/confirmar-pedido/{c.id}")
-    return render_template('bar_digital.html', produtos=Produto.query.all(), c=c, pedidos=Pedido.query.filter_by(cliente_id=c.id, status='Pendente').all(), qr_pedido=qr_pedido)
+        return redirect(url_for('bar_digital', id=c.id))
+
+    produtos = Produto.query.filter(Produto.estoque > 0).all()
+    carrinho = Pedido.query.filter_by(cliente_id=c.id, status='No Carrinho').all()
+    pedidos_finalizados = Pedido.query.filter_by(cliente_id=c.id, status='Pagamento Pendente').all()
+    
+    qr_pedido = gerar_qr_b64(f"https://evento-samba.onrender.com/confirmar-pedido/{c.id}") if pedidos_finalizados else None
+    
+    return render_template('bar_digital.html', produtos=produtos, c=c, carrinho=carrinho, pedidos=pedidos_finalizados, qr_pedido=qr_pedido)
+
+@app.route('/finalizar-carrinho/<int:id>', methods=['POST'])
+def finalizar_carrinho(id):
+    metodo = request.form.get('metodo_pagamento')
+    itens = Pedido.query.filter_by(cliente_id=id, status='No Carrinho').all()
+    for item in itens:
+        item.status = 'Pagamento Pendente'
+        item.metodo_pagamento = metodo
+    db.session.commit()
+    return redirect(url_for('bar_digital', id=id))
 
 @app.route('/bar-staff')
 def bar_staff():
@@ -120,15 +139,16 @@ def bar_staff():
 
 @app.route('/confirmar-pedido/<int:cliente_id>')
 def confirmar_pedido(cliente_id):
-    pedidos = Pedido.query.filter_by(cliente_id=cliente_id, status='Pendente').all()
-    func = Equipe.query.filter_by(usuario=session.get('usuario_nome')).first()
+    pedidos = Pedido.query.filter_by(cliente_id=cliente_id, status='Pagamento Pendente').all()
+    func_staff = Equipe.query.filter_by(usuario=session.get('usuario_nome')).first()
     for p in pedidos:
         p.status = 'Entregue'
         prod = Produto.query.get(p.produto_id)
-        prod.estoque -= 1
-        if func: func.caixinha_total += (prod.preco_venda * 0.10)
+        if prod.estoque > 0:
+            prod.estoque -= 1
+        if func_staff: func_staff.caixinha_total += (prod.preco_venda * 0.10)
     db.session.commit()
-    return "<h1>OK!</h1><a href='/bar-staff'>Voltar</a>"
+    return "<h1>PEDIDO ENTREGUE!</h1><a href='/bar-staff'>Voltar</a>"
 
 # --- ADMIN E EDIÇÃO ---
 @app.route('/admin_total', methods=['GET', 'POST'])
@@ -176,7 +196,6 @@ def logout(): session.clear(); return redirect(url_for('login_staff'))
 @app.route('/reset-bruto-bafafa')
 def reset():
     db.drop_all(); db.create_all()
-    # Carregamento Automático da Vitrine
     itens = [
         ("Antarctica Lata (fardo 18)", "antarctica.jpg"), ("Brahma Lata (fardo 18)", "brahma.jpg"),
         ("Heineken 350ml (fardo 12)", "heineken.jpg"), ("Amstel 473ml (fardo 12)", "amstel.jpg"),
